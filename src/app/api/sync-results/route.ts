@@ -167,10 +167,6 @@ export async function GET(request: Request) {
       totalUpserts: upserts,
       unmatchedFixtures: unmatched.length > 0 ? unmatched : undefined,
       errors: errors.length > 0 ? errors : undefined,
-      debug: {
-        poolMatchTeamsCount: allMatchTeams?.length ?? 0,
-        matchTeamsByPoolKeys: Array.from(matchTeamsByPool.keys()),
-      },
     })
   } catch (error) {
     console.error('Sync error:', error)
