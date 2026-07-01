@@ -105,6 +105,7 @@ export function AdminPanel({
   }
 
   const handleSetResult = async (matchId: string, side: 'home_score' | 'away_score', value: string) => {
+    if (value === '') return // Don't save if field is empty
     const num = Math.min(30, Math.max(0, parseInt(value) || 0))
     const existing = results.find(r => r.match_id === matchId)
     const homeScore = side === 'home_score' ? num : (existing?.home_score ?? 0)
@@ -122,6 +123,14 @@ export function AdminPanel({
       away_score: awayScore,
       source: 'manual',
     }, { onConflict: 'pool_id,match_id' })
+  }
+
+  const handleDeleteResult = async (matchId: string) => {
+    if (!confirm('¿Borrar el resultado de este partido?')) return
+    const existing = results.find(r => r.match_id === matchId)
+    if (!existing?.id) return
+    await supabase.from('results').delete().eq('id', existing.id)
+    setResults(prev => prev.filter(r => r.match_id !== matchId))
   }
 
   const handleSetMatchTeam = async (matchId: string, side: 'real_home' | 'real_away', value: string) => {
@@ -377,9 +386,17 @@ export function AdminPanel({
                             </div>
                           </div>
                           {result && (
-                            <p className="text-center text-[10px] text-green-400 mt-1.5">
-                              ✓ Guardado: {result.home_score}–{result.away_score}
-                            </p>
+                            <div className="flex items-center justify-between mt-2">
+                              <p className="text-[10px] text-green-400">
+                                ✓ Guardado: {result.home_score}–{result.away_score}
+                              </p>
+                              <button
+                                onClick={() => handleDeleteResult(m.id)}
+                                className="text-[10px] text-red-400 hover:text-red-300 font-bold"
+                              >
+                                ✕ Borrar resultado
+                              </button>
+                            </div>
                           )}
                         </div>
                       )
