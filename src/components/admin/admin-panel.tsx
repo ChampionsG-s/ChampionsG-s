@@ -361,20 +361,14 @@ export function AdminPanel({
                               <span className="truncate">{displayHome}</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <input
-                                type="number" min={0} max={30}
-                                defaultValue={result?.home_score ?? ''}
-                                placeholder="–"
-                                onBlur={(e) => handleSetResult(m.id, 'home_score', e.target.value)}
-                                className="w-10 h-10 text-center rounded-lg font-black text-lg outline-none bg-surface border border-border text-cream focus:border-gold"
+                              <ResultInput
+                                value={result?.home_score}
+                                onSave={(v) => handleSetResult(m.id, 'home_score', v)}
                               />
                               <span className="text-muted font-bold">:</span>
-                              <input
-                                type="number" min={0} max={30}
-                                defaultValue={result?.away_score ?? ''}
-                                placeholder="–"
-                                onBlur={(e) => handleSetResult(m.id, 'away_score', e.target.value)}
-                                className="w-10 h-10 text-center rounded-lg font-black text-lg outline-none bg-surface border border-border text-cream focus:border-gold"
+                              <ResultInput
+                                value={result?.away_score}
+                                onSave={(v) => handleSetResult(m.id, 'away_score', v)}
                               />
                             </div>
                             <div className="flex items-center gap-1.5 text-sm font-semibold overflow-hidden flex-row-reverse">
@@ -453,5 +447,34 @@ function TeamCombobox({ value, onChange, placeholder }: { value: string; onChang
         placeholder={placeholder}
       />
     </div>
+  )
+}
+
+// ─── Result Input — controlled, allows clearing ───────────────────────────────
+
+function ResultInput({ value, onSave }: { value?: number; onSave: (v: string) => void }) {
+  const [local, setLocal] = useState<string>(value !== undefined ? String(value) : '')
+
+  useEffect(() => {
+    setLocal(value !== undefined ? String(value) : '')
+  }, [value])
+
+  return (
+    <input
+      type="number"
+      min={0}
+      max={30}
+      value={local}
+      placeholder="–"
+      onChange={(e) => setLocal(e.target.value)}
+      onBlur={(e) => {
+        if (e.target.value === '') {
+          setLocal('')
+        } else {
+          onSave(e.target.value)
+        }
+      }}
+      className="w-10 h-10 text-center rounded-lg font-black text-lg outline-none bg-surface border border-border text-cream focus:border-gold"
+    />
   )
 }
