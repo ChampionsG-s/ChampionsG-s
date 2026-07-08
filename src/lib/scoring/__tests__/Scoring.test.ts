@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { scoreMatch, scoreAwards, scoreSpain } from '../index'
+import { scoreMatch, scoreAwards, scoreSpain, calculateBreakdown } from '../index'
 import { AWARDS, SPAIN_FIELDS } from '@/lib/data/matches'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -271,5 +271,49 @@ describe('scoreSpain', () => {
       [makeSpainPred('es_goals', '15')],
       [makeSpainResult('es_goals', '15')]
     )).toBe(golesField.pts)
+  })
+})
+
+// ─── calculateBreakdown ───────────────────────────────────────────────────────
+
+describe('calculateBreakdown', () => {
+  it('calcula el desglose completo correctamente', () => {
+    const match1 = { ...makeMatch('grupos', 3, 1), id: 'match-1' }
+    const match2 = { ...makeMatch('32avos', 5, 2), id: 'match-2' }
+
+    const matchPredictions = [
+      { match_id: 'match-1', home_score: 2, away_score: 1 } as any, // exacto → 3pts
+      { match_id: 'match-2', home_score: 3, away_score: 0 } as any, // ganador → 2pts
+    ]
+    const results = new Map([
+      ['match-1', { home_score: 2, away_score: 1 } as any],
+      ['match-2', { home_score: 1, away_score: 0 } as any],
+    ])
+
+    const goldenBall = AWARDS.find(a => a.id === 'golden_ball')!
+    const s1Field = SPAIN_FIELDS.find(f => f.id === 'es_s1')!
+
+    const breakdown = calculateBreakdown(
+      matchPredictions,
+      results,
+      [match1, match2],
+      [makeAwardPred('golden_ball', 'Lamine Yamal')],
+      [makeAwardResult('golden_ball', 'Lamine Yamal')],
+      [makeSpainPred('es_s1', 'Mikel Oyarzabal')],
+      [makeSpainResult('es_s1', 'Mikel Oyarzabal')]
+    )
+
+    expect(breakdown.matchPoints).toBe(5) // 3 + 2
+    expect(breakdown.awardPoints).toBe(goldenBall.pts)
+    expect(breakdown.spainPoints).toBe(s1Field.pts)
+    expect(breakdown.total).toBe(5 + goldenBall.pts + s1Field.pts)
+  })
+
+  it('devuelve todo a 0 si no hay predicciones ni resultados', () => {
+    const breakdown = calculateBreakdown([], new Map(), [], [], [], [], [])
+    expect(breakdown.matchPoints).toBe(0)
+    expect(breakdown.awardPoints).toBe(0)
+    expect(breakdown.spainPoints).toBe(0)
+    expect(breakdown.total).toBe(0)
   })
 })
