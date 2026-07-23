@@ -118,19 +118,16 @@ export default function LoginPage() {
       <div className={cn(
         'absolute inset-0 z-10 flex flex-col items-center justify-center px-4',
         'transition-all duration-1000',
-        showSplash ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        showSplash ? 'opacity-0 pointer-events-none' : 'opacity-100 [&>*]:transition-all [&>*]:duration-[2000ms]'
       )}>
         <div className="text-center mb-8">
-          <p className="text-xs tracking-widest text-gold font-bold uppercase mb-2 drop-shadow-lg">
-            Champions G's
-          </p>
           <h1 className="text-6xl font-black tracking-wider text-cream drop-shadow-lg">
             CHAMPIONS <span className="text-gold">G'S</span>
           </h1>
           <p className="text-cream text-sm mt-2 drop-shadow-lg">Crea o únete a tu quiniela de Liga</p>
         </div>
 
-      <div className="w-full max-w-sm backdrop-blur-md bg-black/30 rounded-xl p-8 border border-gold/20">
+      <div className="w-full max-w-sm backdrop-blur-md bg-black/30 rounded-xl p-8 border border-gold/20 transition-all duration-[2000ms]">
         <div className="flex gap-1 bg-surface-2/50 rounded-lg p-1 mb-4 backdrop-blur-sm">
           {(['login', 'register'] as Mode[]).map((m) => (
             <button
