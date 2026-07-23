@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
@@ -15,7 +15,7 @@ function emailFromUsername(username: string) {
     .replace(/ñ/gi, 'n')
     .toLowerCase().trim().replace(/\s+/g, '_')
     .replace(/[^a-z0-9_]/g, '') // strip anything else invalid
-  return `${normalized}@users.tipstr.app`
+  return `${normalized}@championsg-s.app`
 }
 
 export default function LoginPage() {
@@ -27,6 +27,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showSplash, setShowSplash] = useState(true)
+  const [splashExiting, setSplashExiting] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSplashExiting(true)
+      setTimeout(() => setShowSplash(false), 800)
+    }, 2500)
+    return () => clearTimeout(timer)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -90,16 +100,103 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4">
-      <div className="text-center mb-8">
-        <p className="text-xs tracking-widest text-gold font-bold uppercase mb-2">
-          Champions G's
-        </p>
-        <h1 className="text-6xl font-black tracking-wider text-cream">
-          TIP<span className="text-gold">STR</span>
-        </h1>
-        <p className="text-muted text-sm mt-2">Crea o únete a tu quiniela de Liga</p>
-      </div>
+    <>
+      {/* Splash Screen */}
+      {showSplash && (
+        <div
+          className={cn(
+            'fixed inset-0 flex flex-col items-center justify-center z-50',
+            'bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900',
+            'transition-all duration-700',
+            splashExiting ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+          )}
+        >
+          <style>{`
+            @keyframes shield-pop {
+              0% {
+                opacity: 0;
+                transform: scale(0.3) rotateY(180deg);
+              }
+              50% {
+                transform: scale(1.1) rotateY(0deg);
+              }
+              100% {
+                opacity: 1;
+                transform: scale(1) rotateY(0deg);
+              }
+            }
+            @keyframes crown-float {
+              0%, 100% {
+                transform: translateY(0px);
+              }
+              50% {
+                transform: translateY(-10px);
+              }
+            }
+            .shield-animate {
+              animation: shield-pop 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+            .crown-animate {
+              animation: crown-float 2s ease-in-out infinite;
+              animation-delay: 0.3s;
+            }
+          `}</style>
+          
+          <div className="shield-animate">
+            {/* Escudo Champions G's */}
+            <div className="relative w-40 h-48">
+              {/* Fondo del escudo */}
+              <div className="absolute inset-0 bg-gradient-to-b from-blue-600 to-blue-900 rounded-b-3xl border-4 border-gold shadow-2xl"></div>
+              
+              {/* Corona */}
+              <div className="crown-animate absolute -top-12 left-1/2 transform -translate-x-1/2">
+                <svg viewBox="0 0 100 60" className="w-32 h-20 drop-shadow-lg">
+                  {/* Corona dorada */}
+                  <circle cx="50" cy="45" r="35" fill="none" stroke="#D4AF37" strokeWidth="3"/>
+                  {/* Puntas de la corona */}
+                  <circle cx="15" cy="30" r="8" fill="#D4AF37"/>
+                  <circle cx="50" cy="8" r="12" fill="#D4AF37"/>
+                  <circle cx="85" cy="30" r="8" fill="#D4AF37"/>
+                  {/* Puntos decorativos */}
+                  <circle cx="32" cy="20" r="4" fill="#FFC700"/>
+                  <circle cx="68" cy="20" r="4" fill="#FFC700"/>
+                </svg>
+              </div>
+              
+              {/* Contenido del escudo - Letra G */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="text-6xl font-black text-gold mb-2">G</div>
+                <div className="text-xs font-bold text-gold tracking-wider">CHAMPIONS</div>
+              </div>
+              
+              {/* Decoraciones laterales */}
+              <div className="absolute -left-6 top-12 w-4 h-16 bg-gold rounded-l-full opacity-70"></div>
+              <div className="absolute -right-6 top-12 w-4 h-16 bg-gold rounded-r-full opacity-70"></div>
+            </div>
+          </div>
+
+          <div className="mt-16 text-center">
+            <h2 className="text-3xl font-black text-gold tracking-widest">Champions G's</h2>
+            <p className="text-gold text-xs uppercase tracking-wider mt-2">La Liga 26/27</p>
+          </div>
+        </div>
+      )}
+
+      {/* Login Form */}
+      <div className={cn(
+        'min-h-screen flex flex-col items-center justify-center px-4',
+        'transition-all duration-700',
+        showSplash ? 'opacity-0 pointer-events-none' : 'opacity-100'
+      )}>
+        <div className="text-center mb-8">
+          <p className="text-xs tracking-widest text-gold font-bold uppercase mb-2">
+            Champions G's
+          </p>
+          <h1 className="text-6xl font-black tracking-wider text-cream">
+            CHAMPIONS <span className="text-gold">G'S</span>
+          </h1>
+          <p className="text-muted text-sm mt-2">Crea o únete a tu quiniela de Liga</p>
+        </div>
 
       <div className="w-full max-w-sm">
         <div className="flex gap-1 bg-surface-2 rounded-lg p-1 mb-4">
@@ -159,6 +256,7 @@ export default function LoginPage() {
           </button>
         </form>
       </div>
-    </div>
+      </div>
+    </>
   )
 }
