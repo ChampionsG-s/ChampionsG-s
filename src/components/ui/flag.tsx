@@ -18,6 +18,16 @@ export function Flag({ team, size = 'md', className }: FlagProps) {
   const code = TEAM_FLAGS[team]
   const { w, h, cls } = sizes[size]
 
+  if (!team) {
+    return (
+      <span
+        className={cn('inline-flex items-center justify-center rounded-sm bg-border text-[9px] font-black text-background flex-shrink-0', cls, className)}
+      >
+        -
+      </span>
+    )
+  }
+
   if (!code) {
     return (
       <span
