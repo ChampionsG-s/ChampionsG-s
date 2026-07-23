@@ -52,21 +52,32 @@ export function SpainPredictionsView({ poolId, predictions: initialPreds, result
     if (localLocked) return
     setPredictions(prev => [...prev.filter(p => p.field_id !== fieldId), { pool_id: poolId, user_id: membership.user_id, field_id: fieldId, value } as SpainPrediction])
 
-    await supabase.from('spain_predictions').upsert({
-      pool_id: poolId,
-      user_id: membership.user_id,
-      field_id: fieldId,
-      value,
-    }, { onConflict: 'pool_id,user_id,field_id' })
+    try {
+      await supabase.from('spain_predictions').upsert({
+        pool_id: poolId,
+        user_id: membership.user_id,
+        field_id: fieldId,
+        value,
+      }, { onConflict: 'pool_id,user_id,field_id' })
+    } catch (err) {
+      console.error('Error saving spain prediction:', err)
+      alert('Error al guardar la predicción. Intenta de nuevo.')
+    }
   }, [localLocked, poolId, membership.user_id, supabase])
 
   const handleLock = async () => {
     setSaving(true)
-    await supabase.from('pool_members').update({ locked_spain: true }).eq('pool_id', poolId).eq('user_id', membership.user_id)
-    setSaving(false)
-    setLocalLocked(true)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+    try {
+      await supabase.from('pool_members').update({ locked_spain: true }).eq('pool_id', poolId).eq('user_id', membership.user_id)
+      setLocalLocked(true)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } catch (err) {
+      console.error('Error locking spain predictions:', err)
+      alert('Error al bloquear predicciones. Intenta de nuevo.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (

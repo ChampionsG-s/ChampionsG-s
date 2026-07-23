@@ -212,8 +212,9 @@ function UserPredictionsCard({
                       const result = resultsMap.get(m.id)
                       const pts = result ? scoreMatch(pred, result, m) : null
                       const realTeams = matchTeamsMap.get(m.id)
-                      const displayHome = realTeams?.real_home || m.home
-                      const displayAway = realTeams?.real_away || m.away
+                      const displayHome = realTeams?.real_home || m.home_team || m.home || '?'
+                      const displayAway = realTeams?.real_away || m.away_team || m.away || '?'
+                      const ptsExactValue = m.pts_exact ?? 3
                       return (
                         <div key={m.id} className="bg-background border border-border rounded-lg px-2.5 py-2">
                           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-xs">
@@ -229,7 +230,7 @@ function UserPredictionsCard({
                               {pts !== null && (
                                 <span className={cn(
                                   'text-[10px] font-bold px-1.5 rounded-full',
-                                  pts === m.pts_exact ? 'bg-green-900 text-green-300' : pts > 0 ? 'bg-amber-900 text-amber-300' : 'bg-red-900 text-red-300'
+                                  pts === ptsExactValue ? 'bg-green-900 text-green-300' : pts > 0 ? 'bg-amber-900 text-amber-300' : 'bg-red-900 text-red-300'
                                 )}>
                                   {pts}pts
                                 </span>

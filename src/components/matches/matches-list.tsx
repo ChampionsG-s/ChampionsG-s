@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { scoreMatch } from '@/lib/scoring'
 import { JORNADAS } from '@/lib/data/matches'
 import { Flag } from '@/components/ui/flag'
 import { cn } from '@/lib/utils'
@@ -17,19 +18,6 @@ interface MatchesListProps {
   openPhases: OpenPhase[]
   membership: PoolMember
   matchTeams: PoolMatchTeams[]
-}
-
-function scoreMatch(
-  pred: { home_score: number; away_score: number } | undefined,
-  result: { home_score: number; away_score: number } | undefined,
-  match: { pts_exact: number; pts_winner: number }
-): number | null {
-  if (!pred || !result) return null
-  const { home_score: ph, away_score: pa } = pred
-  const { home_score: rh, away_score: ra } = result
-  if (ph === rh && pa === ra) return match.pts_exact
-  if (Math.sign(ph - pa) === Math.sign(rh - ra)) return match.pts_winner
-  return 0
 }
 
 export function MatchesList({
@@ -85,16 +73,67 @@ export function MatchesList({
     return () => { supabase.removeChannel(channel) }
   }, [supabase, poolId])
 
-  const jornadas = useMemo(() => {
-    const labels = Array.from(new Set(matches.map(m => m.group_name?.trim()).filter(Boolean) as string[]))
-    return labels.length > 0 ? labels : JORNADAS.slice(0, 1)
-  }, [matches])
+  const getMatchRange = (matchList: Match[]): number => {
+    if (matchList.length === 0) return 10
+    const maxMatch = Math.max(...matchList.map(m => m.match_number))
+    const totalMatches = matchList.length
+    
+    if (maxMatch <= 8 && totalMatches <= 8) return 8
+    else if (maxMatch <= 16 && totalMatches <= 16) return 8
+    else if (maxMatch <= 24 && totalMatches <= 24) return 12
+    else if (maxMatch <= 32 && totalMatches <= 32) return 16
+    else return 10
+  }
 
-  const jornadaForMatch = (match: Match) => match.group_name?.trim() || `Jornada ${Math.max(1, Math.ceil(match.match_number / 10))}`
+  const jornadaForMatch = (match: Match) => {
+    if (match.jornada) return `Jornada ${match.jornada}`
+    if (match.group_name?.trim()) return match.group_name.trim()
+    const range = getMatchRange(matches)
+    return `Jornada ${Math.max(1, Math.ceil(match.match_number / range))}`
+  }
+  
+  const jornadas = useMemo(() => {
+    // Primero intenta agrupar por jornada (campo de la BD)
+    const byJornada = Array.from(new Set(
+      matches
+        .filter(m => m.jornada !== null && m.jornada !== undefined)
+        .map(m => m.jornada!)
+    )).sort((a, b) => a - b)
+    
+    if (byJornada.length > 0) {
+      return byJornada.map(j => `Jornada ${j}`)
+    }
+    
+    // Fallback: intenta agrupar por group_name
+    const byGroupName = Array.from(new Set(
+      matches
+        .filter(m => m.group_name?.trim())
+        .map(m => m.group_name!.trim())
+    ))
+    
+    if (byGroupName.length > 0) {
+      return byGroupName
+    }
+    
+    // Si no hay jornada ni group_name, calcula por match_number
+    if (matches.length === 0) return ['Jornada 1']
+    
+    const range = getMatchRange(matches)
+    
+    const calculated = Array.from(new Set(
+      matches.map(m => `Jornada ${Math.max(1, Math.ceil(m.match_number / range))}`)
+    )).sort((a, b) => {
+      const numA = parseInt(a.split(' ')[1])
+      const numB = parseInt(b.split(' ')[1])
+      return numA - numB
+    })
+    
+    return calculated.length > 0 ? calculated : ['Jornada 1']
+  }, [matches])
   const jornadaDeadline = (label: string) => {
     const items = matches.filter(m => jornadaForMatch(m) === label)
     return items.reduce((earliest, match) => {
-      const time = new Date(match.date).getTime()
+      const time = new Date(match.match_date || match.date || '').getTime()
       return Number.isFinite(time) && time < earliest ? time : earliest
     }, Number.POSITIVE_INFINITY)
   }
@@ -111,36 +150,47 @@ export function MatchesList({
   const handlePrediction = useCallback(async (matchId: string, side: 'home_score' | 'away_score', value: string) => {
     const match = matches.find(m => m.id === matchId)
     if (!match || isLocked || !isJornadaOpen(jornadaForMatch(match))) return
-    const num = value === '' ? 0 : Math.min(30, Math.max(0, parseInt(value) || 0))
-    const existing = predictions.find(p => p.match_id === matchId)
-    const homeScore = side === 'home_score' ? num : (existing?.home_score ?? 0)
-    const awayScore = side === 'away_score' ? num : (existing?.away_score ?? 0)
-    const updated = existing
-      ? { ...existing, home_score: homeScore, away_score: awayScore }
-      : { match_id: matchId, pool_id: poolId, user_id: membership.user_id, home_score: homeScore, away_score: awayScore }
+    try {
+      const num = value === '' ? 0 : Math.min(30, Math.max(0, parseInt(value) || 0))
+      const existing = predictions.find(p => p.match_id === matchId)
+      const homeScore = side === 'home_score' ? num : (existing?.home_score ?? 0)
+      const awayScore = side === 'away_score' ? num : (existing?.away_score ?? 0)
+      const updated = existing
+        ? { ...existing, home_score: homeScore, away_score: awayScore }
+        : { match_id: matchId, pool_id: poolId, user_id: membership.user_id, home_score: homeScore, away_score: awayScore }
 
-    setPredictions(prev => [...prev.filter(p => p.match_id !== matchId), updated as Prediction])
+      setPredictions(prev => [...prev.filter(p => p.match_id !== matchId), updated as Prediction])
 
-    await supabase.from('predictions').upsert({
-      pool_id: poolId,
-      user_id: membership.user_id,
-      match_id: matchId,
-      home_score: homeScore,
-      away_score: awayScore,
-    }, { onConflict: 'pool_id,user_id,match_id' })
+      await supabase.from('predictions').upsert({
+        pool_id: poolId,
+        user_id: membership.user_id,
+        match_id: matchId,
+        home_score: homeScore,
+        away_score: awayScore,
+      }, { onConflict: 'pool_id,user_id,match_id' })
+    } catch (err) {
+      console.error('Error saving prediction:', err)
+      alert('Error al guardar la predicción. Intenta de nuevo.')
+    }
   }, [isLocked, predictions, poolId, membership.user_id, supabase, matches])
 
   const handleLock = async () => {
     setSaving(true)
-    await supabase
-      .from('pool_members')
-      .update({ locked_matches: true })
-      .eq('pool_id', poolId)
-      .eq('user_id', membership.user_id)
-    setSaving(false)
-    setLocalLocked(true)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+    try {
+      await supabase
+        .from('pool_members')
+        .update({ locked_matches: true })
+        .eq('pool_id', poolId)
+        .eq('user_id', membership.user_id)
+      setLocalLocked(true)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } catch (err) {
+      console.error('Error locking predictions:', err)
+      alert('Error al bloquear predicciones. Intenta de nuevo.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const visibleMatches = jornada
@@ -242,23 +292,28 @@ function MatchCard({ match, realTeams, pred, result, isLocked, onPred }: MatchCa
   const hasResult = !!result
   const hasPred = !!pred
   const pts = hasPred && hasResult ? scoreMatch(pred, result, match) : null
-  const displayHome = realTeams?.real_home || match.home
-  const displayAway = realTeams?.real_away || match.away
-  const jornadaLabel = match.group_name?.trim() || `Jornada ${Math.max(1, Math.ceil(match.match_number / 10))}`
+  const displayHome = realTeams?.real_home || match.home_team || match.home || '?'
+  const displayAway = realTeams?.real_away || match.away_team || match.away || '?'
+  const jornadaLabel = match.jornada ? `Jornada ${match.jornada}` : (match.group_name?.trim() || `Jornada ${Math.max(1, Math.ceil(match.match_number / 10))}`)
+
+  const ptsExactValue = match.pts_exact ?? 3
 
   const cardClass = cn(
     'bg-surface-2 border rounded-xl p-3 transition-colors',
-    pts !== null && pts === match.pts_exact && 'border-green-700 bg-green-950/30',
-    pts !== null && pts > 0 && pts < match.pts_exact && 'border-amber-700 bg-amber-950/20',
+    pts !== null && pts === ptsExactValue && 'border-green-700 bg-green-950/30',
+    pts !== null && pts > 0 && pts < ptsExactValue && 'border-amber-700 bg-amber-950/20',
     pts === null && 'border-border',
   )
+
+  const dateStr = match.match_date || match.date || ''
+  const dateDisplay = dateStr ? new Date(dateStr).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }) : '?'
 
   return (
     <div className={cardClass}>
       <div className="text-center text-xs text-muted mb-2 flex items-center justify-center gap-2">
         <span>{jornadaLabel}</span>
         <span>·</span>
-        <span>{match.date}</span>
+        <span>{dateDisplay}</span>
       </div>
 
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">

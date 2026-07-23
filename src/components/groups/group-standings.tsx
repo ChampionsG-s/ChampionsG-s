@@ -34,8 +34,13 @@ function calcStandings(_groupKey: string, groupMatches: Match[], resultsMap: Map
     const r = resultsMap.get(m.id)
     if (!r) return
 
-    const home = table.get(m.home)!
-    const away = table.get(m.away)!
+    const homeTeam = m.home_team || m.home
+    const awayTeam = m.away_team || m.away
+    if (!homeTeam || !awayTeam) return
+
+    const home = table.get(homeTeam)
+    const away = table.get(awayTeam)
+    if (!home || !away) return
 
     home.played++; away.played++
     home.gf += r.home_score; home.gc += r.away_score

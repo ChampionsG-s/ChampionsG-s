@@ -43,13 +43,22 @@ export interface PoolMember {
 export interface Match {
   id: string
   match_number: number
-  group_name: string | null
-  home: string
-  away: string
-  date: string
-  phase: Phase
-  pts_exact: number
-  pts_winner: number
+  jornada: number | null
+  home_team: string
+  away_team: string
+  match_date: string
+  competition: string
+  season: string
+  round: string | null
+  leg: string | null
+  // Legacy fields (for compatibility)
+  group_name?: string | null
+  home?: string
+  away?: string
+  date?: string
+  phase?: Phase
+  pts_exact?: number
+  pts_winner?: number
 }
 
 export interface PoolMatchTeams {

@@ -13,6 +13,8 @@ interface OpenPhase {
   is_open: boolean
 }
 
+type Tab = 'members' | 'jornadas' | 'results'
+
 interface LeagueAdminPanelProps {
   poolId: string
   members: (PoolMember & { username: string })[]
@@ -22,16 +24,29 @@ interface LeagueAdminPanelProps {
   currentUserId: string
 }
 
-type Tab = 'members' | 'jornadas' | 'results'
+function getMatchRange(matchList: Match[]): number {
+  if (matchList.length === 0) return 10
+  const maxMatch = Math.max(...matchList.map(m => m.match_number))
+  const totalMatches = matchList.length
+  
+  if (maxMatch <= 8 && totalMatches <= 8) return 8
+  else if (maxMatch <= 16 && totalMatches <= 16) return 8
+  else if (maxMatch <= 24 && totalMatches <= 24) return 12
+  else if (maxMatch <= 32 && totalMatches <= 32) return 16
+  else return 10
+}
 
-function jornadaLabel(match: Match) {
-  return match.group_name?.trim() || `Jornada ${Math.max(1, Math.ceil(match.match_number / 10))}`
+function jornadaLabel(match: Match, matches: Match[]) {
+  if (match.jornada) return `Jornada ${match.jornada}`
+  if (match.group_name?.trim()) return match.group_name.trim()
+  const range = getMatchRange(matches)
+  return `Jornada ${Math.max(1, Math.ceil(match.match_number / range))}`
 }
 
 function jornadaDeadline(matches: Match[], label: string) {
-  const items = matches.filter(match => jornadaLabel(match) === label)
+  const items = matches.filter(match => jornadaLabel(match, matches) === label)
   return items.reduce((earliest, match) => {
-    const time = new Date(match.date).getTime()
+    const time = new Date(match.match_date || match.date || '').getTime()
     return Number.isFinite(time) && time < earliest ? time : earliest
   }, Number.POSITIVE_INFINITY)
 }
@@ -52,8 +67,42 @@ export function LeagueAdminPanel({
   const [loading, setLoading] = useState<string | null>(null)
 
   const jornadas = useMemo(() => {
-    const labels = Array.from(new Set(matches.map(jornadaLabel)))
-    return labels.length > 0 ? labels : ['Jornada 1']
+    // Primero intenta agrupar por jornada (campo de la BD)
+    const byJornada = Array.from(new Set(
+      matches
+        .filter(m => m.jornada !== null && m.jornada !== undefined)
+        .map(m => m.jornada!)
+    )).sort((a, b) => a - b)
+    
+    if (byJornada.length > 0) {
+      return byJornada.map(j => `Jornada ${j}`)
+    }
+    
+    // Fallback: intenta agrupar por group_name
+    const byGroupName = Array.from(new Set(
+      matches
+        .filter(m => m.group_name?.trim())
+        .map(m => m.group_name!.trim())
+    ))
+    
+    if (byGroupName.length > 0) {
+      return byGroupName
+    }
+    
+    // Si no hay group_name, calcula por match_number
+    if (matches.length === 0) return ['Jornada 1']
+    
+    const range = getMatchRange(matches)
+    
+    const calculated = Array.from(new Set(
+      matches.map(m => `Jornada ${Math.max(1, Math.ceil(m.match_number / range))}`)
+    )).sort((a, b) => {
+      const numA = parseInt(a.split(' ')[1])
+      const numB = parseInt(b.split(' ')[1])
+      return numA - numB
+    })
+    
+    return calculated.length > 0 ? calculated : ['Jornada 1']
   }, [matches])
 
   const pending = members.filter(member => member.status === 'pending')
@@ -63,56 +112,85 @@ export function LeagueAdminPanel({
 
   const handleApprove = async (memberId: string) => {
     setLoading(memberId)
-    await supabase.from('pool_members').update({ status: 'approved' }).eq('id', memberId)
-    setMembers(prev => prev.map(member => member.id === memberId ? { ...member, status: 'approved' } : member))
-    setLoading(null)
+    try {
+      await supabase.from('pool_members').update({ status: 'approved' }).eq('id', memberId)
+      setMembers(prev => prev.map(member => member.id === memberId ? { ...member, status: 'approved' } : member))
+    } catch (err) {
+      console.error('Error approving member:', err)
+      alert('Error al aceptar el usuario. Intenta de nuevo.')
+    } finally {
+      setLoading(null)
+    }
   }
 
   const handleReject = async (memberId: string) => {
     if (!confirm('¿Rechazar a este usuario?')) return
     setLoading(memberId)
-    await supabase.from('pool_members').update({ status: 'rejected' }).eq('id', memberId)
-    setMembers(prev => prev.filter(member => member.id !== memberId))
-    setLoading(null)
+    try {
+      await supabase.from('pool_members').update({ status: 'rejected' }).eq('id', memberId)
+      setMembers(prev => prev.filter(member => member.id !== memberId))
+    } catch (err) {
+      console.error('Error rejecting member:', err)
+      alert('Error al rechazar el usuario. Intenta de nuevo.')
+    } finally {
+      setLoading(null)
+    }
   }
 
   const handleToggleLock = async (memberId: string, currentLocked: boolean) => {
     setLoading(memberId)
-    const updated = { locked_matches: !currentLocked }
-    await supabase.from('pool_members').update(updated).eq('id', memberId)
-    setMembers(prev => prev.map(member => member.id === memberId ? { ...member, ...updated } : member))
-    setLoading(null)
+    try {
+      const updated = { locked_matches: !currentLocked }
+      await supabase.from('pool_members').update(updated).eq('id', memberId)
+      setMembers(prev => prev.map(member => member.id === memberId ? { ...member, ...updated } : member))
+    } catch (err) {
+      console.error('Error toggling lock:', err)
+      alert('Error al cambiar el bloqueo. Intenta de nuevo.')
+    } finally {
+      setLoading(null)
+    }
   }
 
   const handleToggleJornada = async (label: string, current: boolean) => {
     setLoading(`jornada-${label}`)
-    await supabase.from('pool_open_phases').upsert({ pool_id: poolId, phase: label, is_open: !current }, { onConflict: 'pool_id,phase' })
-    setOpenPhases(prev => {
-      const rest = prev.filter(item => item.phase !== label)
-      return [...rest, { id: label, pool_id: poolId, phase: label, is_open: !current }]
-    })
-    setLoading(null)
+    try {
+      await supabase.from('pool_open_phases').upsert({ pool_id: poolId, phase: label, is_open: !current }, { onConflict: 'pool_id,phase' })
+      setOpenPhases(prev => {
+        const rest = prev.filter(item => item.phase !== label)
+        return [...rest, { id: label, pool_id: poolId, phase: label, is_open: !current }]
+      })
+    } catch (err) {
+      console.error('Error toggling jornada:', err)
+      alert('Error al cambiar la jornada. Intenta de nuevo.')
+    } finally {
+      setLoading(null)
+    }
   }
 
   const handleSetResult = async (matchId: string, side: 'home_score' | 'away_score', value: string) => {
     if (value === '') return
-    const num = Math.min(30, Math.max(0, parseInt(value) || 0))
-    const existing = results.find(result => result.match_id === matchId)
-    const homeScore = side === 'home_score' ? num : (existing?.home_score ?? 0)
-    const awayScore = side === 'away_score' ? num : (existing?.away_score ?? 0)
-    const updated = existing
-      ? { ...existing, home_score: homeScore, away_score: awayScore }
-      : { match_id: matchId, pool_id: poolId, home_score: homeScore, away_score: awayScore, source: 'manual' as const }
+    try {
+      const num = Math.min(30, Math.max(0, parseInt(value) || 0))
+      const existing = results.find(result => result.match_id === matchId)
+      const homeScore = side === 'home_score' ? num : (existing?.home_score ?? 0)
+      const awayScore = side === 'away_score' ? num : (existing?.away_score ?? 0)
+      const updated = existing
+        ? { ...existing, home_score: homeScore, away_score: awayScore }
+        : { match_id: matchId, pool_id: poolId, home_score: homeScore, away_score: awayScore, source: 'manual' as const }
 
-    setResults(prev => [...prev.filter(result => result.match_id !== matchId), updated as Result])
+      setResults(prev => [...prev.filter(result => result.match_id !== matchId), updated as Result])
 
-    await supabase.from('results').upsert({
-      pool_id: poolId,
-      match_id: matchId,
-      home_score: homeScore,
-      away_score: awayScore,
-      source: 'manual',
-    }, { onConflict: 'pool_id,match_id' })
+      await supabase.from('results').upsert({
+        pool_id: poolId,
+        match_id: matchId,
+        home_score: homeScore,
+        away_score: awayScore,
+        source: 'manual',
+      }, { onConflict: 'pool_id,match_id' })
+    } catch (err) {
+      console.error('Error setting result:', err)
+      alert('Error al guardar el resultado. Intenta de nuevo.')
+    }
   }
 
   return (
@@ -248,7 +326,7 @@ export function LeagueAdminPanel({
           </p>
           <div className="space-y-5">
             {jornadas.map(label => {
-              const jornadaMatches = matches.filter(match => jornadaLabel(match) === label)
+              const jornadaMatches = matches.filter(match => jornadaLabel(match, matches) === label)
               if (jornadaMatches.length === 0) return null
 
               return (
@@ -261,8 +339,8 @@ export function LeagueAdminPanel({
                         <div key={match.id} className="bg-surface-2 border border-border rounded-lg p-3">
                           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
                             <div className="flex items-center gap-1.5 text-sm font-semibold overflow-hidden">
-                              <Flag team={match.home} size="sm" />
-                              <span className="truncate">{match.home}</span>
+                              <Flag team={match.home_team || match.home || ''} size="sm" />
+                              <span className="truncate">{match.home_team || match.home || '-'}</span>
                             </div>
                             <div className="flex items-center gap-1.5">
                               <ResultInput
@@ -276,8 +354,8 @@ export function LeagueAdminPanel({
                               />
                             </div>
                             <div className="flex items-center gap-1.5 text-sm font-semibold overflow-hidden flex-row-reverse">
-                              <Flag team={match.away} size="sm" />
-                              <span className="truncate text-right">{match.away}</span>
+                              <Flag team={match.away_team || match.away || ''} size="sm" />
+                              <span className="truncate text-right">{match.away_team || match.away || '-'}</span>
                             </div>
                           </div>
                           <p className="text-[10px] text-muted mt-2">

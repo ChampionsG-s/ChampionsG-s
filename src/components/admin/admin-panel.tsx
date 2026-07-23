@@ -61,92 +61,141 @@ export function AdminPanel({
 
   const handleApprove = async (memberId: string) => {
     setLoading(memberId)
-    await supabase.from('pool_members').update({ status: 'approved' }).eq('id', memberId)
-    setMembers(prev => prev.map(m => m.id === memberId ? { ...m, status: 'approved' } : m))
-    setLoading(null)
+    try {
+      await supabase.from('pool_members').update({ status: 'approved' }).eq('id', memberId)
+      setMembers(prev => prev.map(m => m.id === memberId ? { ...m, status: 'approved' } : m))
+    } catch (err) {
+      console.error('Error approving member:', err)
+      alert('Error al aceptar el usuario. Intenta de nuevo.')
+    } finally {
+      setLoading(null)
+    }
   }
 
   const handleReject = async (memberId: string) => {
     if (!confirm('¿Rechazar a este usuario?')) return
     setLoading(memberId)
-    await supabase.from('pool_members').update({ status: 'rejected' }).eq('id', memberId)
-    setMembers(prev => prev.filter(m => m.id !== memberId))
-    setLoading(null)
+    try {
+      await supabase.from('pool_members').update({ status: 'rejected' }).eq('id', memberId)
+      setMembers(prev => prev.filter(m => m.id !== memberId))
+    } catch (err) {
+      console.error('Error rejecting member:', err)
+      alert('Error al rechazar el usuario. Intenta de nuevo.')
+    } finally {
+      setLoading(null)
+    }
   }
 
   const handleToggleLock = async (memberId: string, currentLocked: boolean) => {
     setLoading(memberId)
-    const updated = { locked_matches: !currentLocked, locked_spain: !currentLocked, locked_awards: !currentLocked }
-    await supabase.from('pool_members').update(updated).eq('id', memberId)
-    setMembers(prev => prev.map(m => m.id === memberId ? { ...m, ...updated } : m))
-    setLoading(null)
+    try {
+      const updated = { locked_matches: !currentLocked, locked_spain: !currentLocked, locked_awards: !currentLocked }
+      await supabase.from('pool_members').update(updated).eq('id', memberId)
+      setMembers(prev => prev.map(m => m.id === memberId ? { ...m, ...updated } : m))
+    } catch (err) {
+      console.error('Error toggling lock:', err)
+      alert('Error al cambiar el bloqueo. Intenta de nuevo.')
+    } finally {
+      setLoading(null)
+    }
   }
 
   const handleTogglePhase = async (phase: string, current: boolean) => {
     setLoading(`phase-${phase}`)
-    await supabase.from('pool_open_phases').update({ is_open: !current }).eq('pool_id', poolId).eq('phase', phase)
-    setOpenPhases(prev => prev.map(p => p.phase === phase ? { ...p, is_open: !current } : p))
-    setLoading(null)
+    try {
+      await supabase.from('pool_open_phases').update({ is_open: !current }).eq('pool_id', poolId).eq('phase', phase)
+      setOpenPhases(prev => prev.map(p => p.phase === phase ? { ...p, is_open: !current } : p))
+    } catch (err) {
+      console.error('Error toggling phase:', err)
+      alert('Error al cambiar la ronda. Intenta de nuevo.')
+    } finally {
+      setLoading(null)
+    }
   }
 
   const handleAddPlayer = async () => {
     const name = newPlayer.trim()
     if (!name) return
-    const { data } = await supabase.from('pool_spain_squad').insert({ pool_id: poolId, name }).select().single()
-    if (data) {
-      setSquad(prev => [...prev, data as PoolSpainSquadPlayer].sort((a, b) => a.name.localeCompare(b.name)))
-      setNewPlayer('')
+    try {
+      const { data } = await supabase.from('pool_spain_squad').insert({ pool_id: poolId, name }).select().single()
+      if (data) {
+        setSquad(prev => [...prev, data as PoolSpainSquadPlayer].sort((a, b) => a.name.localeCompare(b.name)))
+        setNewPlayer('')
+      }
+    } catch (err) {
+      console.error('Error adding player:', err)
+      alert('Error al agregar jugador. Intenta de nuevo.')
     }
   }
 
   const handleRemovePlayer = async (id: string) => {
-    await supabase.from('pool_spain_squad').delete().eq('id', id)
-    setSquad(prev => prev.filter(p => p.id !== id))
+    try {
+      await supabase.from('pool_spain_squad').delete().eq('id', id)
+      setSquad(prev => prev.filter(p => p.id !== id))
+    } catch (err) {
+      console.error('Error removing player:', err)
+      alert('Error al remover jugador. Intenta de nuevo.')
+    }
   }
 
   const handleSetResult = async (matchId: string, side: 'home_score' | 'away_score', value: string) => {
     if (value === '') return // Don't save if field is empty
-    const num = Math.min(30, Math.max(0, parseInt(value) || 0))
-    const existing = results.find(r => r.match_id === matchId)
-    const homeScore = side === 'home_score' ? num : (existing?.home_score ?? 0)
-    const awayScore = side === 'away_score' ? num : (existing?.away_score ?? 0)
-    const updated = existing
-      ? { ...existing, home_score: homeScore, away_score: awayScore }
-      : { match_id: matchId, pool_id: poolId, home_score: homeScore, away_score: awayScore, source: 'manual' as const }
+    try {
+      const num = Math.min(30, Math.max(0, parseInt(value) || 0))
+      const existing = results.find(r => r.match_id === matchId)
+      const homeScore = side === 'home_score' ? num : (existing?.home_score ?? 0)
+      const awayScore = side === 'away_score' ? num : (existing?.away_score ?? 0)
+      const updated = existing
+        ? { ...existing, home_score: homeScore, away_score: awayScore }
+        : { match_id: matchId, pool_id: poolId, home_score: homeScore, away_score: awayScore, source: 'manual' as const }
 
-    setResults(prev => [...prev.filter(r => r.match_id !== matchId), updated as Result])
+      setResults(prev => [...prev.filter(r => r.match_id !== matchId), updated as Result])
 
-    await supabase.from('results').upsert({
-      pool_id: poolId,
-      match_id: matchId,
-      home_score: homeScore,
-      away_score: awayScore,
-      source: 'manual',
-    }, { onConflict: 'pool_id,match_id' })
+      await supabase.from('results').upsert({
+        pool_id: poolId,
+        match_id: matchId,
+        home_score: homeScore,
+        away_score: awayScore,
+        source: 'manual',
+      }, { onConflict: 'pool_id,match_id' })
+    } catch (err) {
+      console.error('Error setting result:', err)
+      alert('Error al guardar el resultado. Intenta de nuevo.')
+    }
   }
 
   const handleDeleteResult = async (matchId: string) => {
     if (!confirm('¿Borrar el resultado de este partido?')) return
-    const existing = results.find(r => r.match_id === matchId)
-    if (!existing?.id) return
-    await supabase.from('results').delete().eq('id', existing.id)
-    setResults(prev => prev.filter(r => r.match_id !== matchId))
+    try {
+      const existing = results.find(r => r.match_id === matchId)
+      if (!existing?.id) return
+      await supabase.from('results').delete().eq('id', existing.id)
+      setResults(prev => prev.filter(r => r.match_id !== matchId))
+    } catch (err) {
+      console.error('Error deleting result:', err)
+      alert('Error al borrar el resultado. Intenta de nuevo.')
+    }
   }
 
   const handleSetMatchTeam = async (matchId: string, side: 'real_home' | 'real_away', value: string) => {
-    const existing = matchTeams.find(mt => mt.match_id === matchId)
-    const updated = existing
-      ? { ...existing, [side]: value }
-      : { pool_id: poolId, match_id: matchId, real_home: side === 'real_home' ? value : null, real_away: side === 'real_away' ? value : null }
+    try {
+      const existing = matchTeams.find(mt => mt.match_id === matchId)
+      const updated = existing
+        ? { ...existing, [side]: value }
+        : { pool_id: poolId, match_id: matchId, real_home: side === 'real_home' ? value : null, real_away: side === 'real_away' ? value : null }
 
-    setMatchTeams(prev => [...prev.filter(mt => mt.match_id !== matchId), updated as PoolMatchTeams])
+      setMatchTeams(prev => [...prev.filter(mt => mt.match_id !== matchId), updated as PoolMatchTeams])
 
-    await supabase.from('pool_match_teams').upsert({
-      pool_id: poolId,
-      match_id: matchId,
-      ...(existing ? { real_home: existing.real_home, real_away: existing.real_away } : {}),
-      [side]: value,
-    }, { onConflict: 'pool_id,match_id' })
+      await supabase.from('pool_match_teams').upsert({
+        pool_id: poolId,
+        match_id: matchId,
+        ...(existing ? { real_home: existing.real_home, real_away: existing.real_away } : {}),
+        [side]: value,
+      }, { onConflict: 'pool_id,match_id' })
+    } catch (err) {
+      console.error('Error setting match team:', err)
+      alert('Error al asignar equipo. Intenta de nuevo.')
+    }
   }
 
   const openKnockoutPhases = PHASE_ORDER.filter(p => p !== 'grupos' && openPhases.find(op => op.phase === p)?.is_open)
@@ -360,8 +409,8 @@ export function AdminPanel({
                     {phMatches.map(m => {
                       const teams = matchTeams.find(mt => mt.match_id === m.id)
                       const result = results.find(r => r.match_id === m.id)
-                      const displayHome = teams?.real_home || m.home
-                      const displayAway = teams?.real_away || m.away
+                      const displayHome = teams?.real_home || m.home_team || m.home || ''
+                      const displayAway = teams?.real_away || m.away_team || m.away || ''
                       return (
                         <div key={m.id} className="bg-surface-2 border border-border rounded-lg p-3">
                           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">

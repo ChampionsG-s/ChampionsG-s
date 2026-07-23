@@ -55,21 +55,32 @@ export function AwardsPredictionsView({ poolId, predictions: initialPreds, resul
     if (localLocked) return
     setPredictions(prev => [...prev.filter(p => p.award_id !== awardId), { pool_id: poolId, user_id: membership.user_id, award_id: awardId, value } as AwardPrediction])
 
-    await supabase.from('award_predictions').upsert({
-      pool_id: poolId,
-      user_id: membership.user_id,
-      award_id: awardId,
-      value,
-    }, { onConflict: 'pool_id,user_id,award_id' })
+    try {
+      await supabase.from('award_predictions').upsert({
+        pool_id: poolId,
+        user_id: membership.user_id,
+        award_id: awardId,
+        value,
+      }, { onConflict: 'pool_id,user_id,award_id' })
+    } catch (err) {
+      console.error('Error saving award prediction:', err)
+      alert('Error al guardar la predicción de premio. Intenta de nuevo.')
+    }
   }, [localLocked, poolId, membership.user_id, supabase])
 
   const handleLock = async () => {
     setSaving(true)
-    await supabase.from('pool_members').update({ locked_awards: true }).eq('pool_id', poolId).eq('user_id', membership.user_id)
-    setSaving(false)
-    setLocalLocked(true)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+    try {
+      await supabase.from('pool_members').update({ locked_awards: true }).eq('pool_id', poolId).eq('user_id', membership.user_id)
+      setLocalLocked(true)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } catch (err) {
+      console.error('Error locking awards predictions:', err)
+      alert('Error al bloquear predicciones. Intenta de nuevo.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (

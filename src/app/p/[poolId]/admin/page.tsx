@@ -39,12 +39,14 @@ export default async function AdminPage({
     username: usersMap.get(m.user_id) ?? 'Desconocido',
   }))
 
+  const matchesData = matchesRes.data ?? []
+
   return (
     <LeagueAdminPanel
       poolId={poolId}
       members={members}
       openPhases={openPhasesRes.data ?? []}
-      matches={matchesRes.data ?? []}
+      matches={matchesData}
       results={resultsRes.data ?? []}
       currentUserId={user.id}
     />

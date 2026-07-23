@@ -11,7 +11,7 @@ export default async function JornadasPage({
   const { data: { user } } = await supabase.auth.getUser()
 
   const [matchesRes, resultsRes, predsRes, openPhasesRes, membershipRes, matchTeamsRes] = await Promise.all([
-    supabase.from('matches').select('*').order('match_number'),
+    supabase.from('matches').select('*').order('jornada', { ascending: true, nullsFirst: false }).order('match_number', { ascending: true }),
     supabase.from('results').select('*').eq('pool_id', poolId),
     supabase.from('predictions').select('*').eq('pool_id', poolId).eq('user_id', user!.id),
     supabase.from('pool_open_phases').select('*').eq('pool_id', poolId),

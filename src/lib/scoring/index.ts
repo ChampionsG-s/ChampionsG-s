@@ -4,15 +4,19 @@ import { AWARDS, SPAIN_FIELDS } from '@/lib/data/matches'
 export function scoreMatch(
   pred: Pick<Prediction, 'home_score' | 'away_score'> | null | undefined,
   result: Pick<Result, 'home_score' | 'away_score'> | null | undefined,
-  match: Pick<Match, 'pts_exact' | 'pts_winner'>
+  match?: Partial<{ pts_exact: number; pts_winner: number }> | null
 ): number {
   if (!pred || !result) return 0
 
   const { home_score: ph, away_score: pa } = pred
   const { home_score: rh, away_score: ra } = result
+  
+  // Use provided values or defaults (3 for exact, 1 for winner)
+  const ptsExact = match?.pts_exact ?? 3
+  const ptsWinner = match?.pts_winner ?? 1
 
-  if (ph === rh && pa === ra) return match.pts_exact
-  if (Math.sign(ph - pa) === Math.sign(rh - ra)) return match.pts_winner
+  if (ph === rh && pa === ra) return ptsExact
+  if (Math.sign(ph - pa) === Math.sign(rh - ra)) return ptsWinner
   return 0
 }
 
