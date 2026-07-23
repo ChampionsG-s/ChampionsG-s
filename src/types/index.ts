@@ -59,6 +59,7 @@ export interface Match {
   phase?: Phase
   pts_exact?: number
   pts_winner?: number
+  is_bonus?: boolean
 }
 
 export interface PoolMatchTeams {

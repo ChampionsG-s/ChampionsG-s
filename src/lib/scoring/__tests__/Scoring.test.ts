@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { scoreMatch, scoreAwards, scoreSpain, calculateBreakdown } from '../index'
+import { scoreMatch, scoreAwards, scoreSpain, calculateBreakdown, signFromScores, SIGN_TO_CANONICAL_SCORE } from '../index'
 import { AWARDS, SPAIN_FIELDS } from '@/lib/data/matches'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -126,6 +126,63 @@ describe('scoreMatch — Final (10/5)', () => {
 
   it('fallo total da 0 puntos', () => {
     expect(scoreMatch(makePred(0, 1), makeResult(1, 0), FINAL_MATCH)).toBe(0)
+  })
+})
+
+// ─── scoreMatch — Quiniela (jornada con partido bonus) ─────────────────────────
+
+function makeJornadaMatch(isBonus: boolean, ptsExact = 3, ptsWinner = 1) {
+  return { id: 'jornada-match', is_bonus: isBonus, pts_exact: ptsExact, pts_winner: ptsWinner, home: 'TeamA', away: 'TeamB' } as any
+}
+
+describe('scoreMatch — partido normal de jornada (is_bonus: false)', () => {
+  const MATCH = makeJornadaMatch(false)
+
+  it('acertar el signo (aunque no sea el marcador exacto) da los puntos de ganador', () => {
+    expect(scoreMatch(makePred(3, 1), makeResult(2, 0), MATCH)).toBe(1)
+  })
+
+  it('acertar el marcador exacto NO da puntos extra — solo cuenta el signo', () => {
+    expect(scoreMatch(makePred(2, 0), makeResult(2, 0), MATCH)).toBe(1)
+  })
+
+  it('acertar el empate da los puntos de ganador', () => {
+    expect(scoreMatch(makePred(0, 0), makeResult(3, 3), MATCH)).toBe(1)
+  })
+
+  it('fallar el signo da 0 puntos', () => {
+    expect(scoreMatch(makePred(2, 0), makeResult(0, 2), MATCH)).toBe(0)
+  })
+})
+
+describe('scoreMatch — partido bonus de la jornada (is_bonus: true, "Pleno al 15")', () => {
+  const MATCH = makeJornadaMatch(true)
+
+  it('marcador exacto da los puntos de exacto', () => {
+    expect(scoreMatch(makePred(2, 0), makeResult(2, 0), MATCH)).toBe(3)
+  })
+
+  it('acertar solo el signo da los puntos de ganador', () => {
+    expect(scoreMatch(makePred(3, 1), makeResult(2, 0), MATCH)).toBe(1)
+  })
+
+  it('fallar el signo da 0 puntos', () => {
+    expect(scoreMatch(makePred(2, 0), makeResult(0, 2), MATCH)).toBe(0)
+  })
+})
+
+describe('signFromScores / SIGN_TO_CANONICAL_SCORE', () => {
+  it('detecta victoria local, empate y victoria visitante', () => {
+    expect(signFromScores(2, 0)).toBe('1')
+    expect(signFromScores(1, 1)).toBe('X')
+    expect(signFromScores(0, 3)).toBe('2')
+  })
+
+  it('la codificación canónica de cada signo se decodifica a sí misma', () => {
+    for (const sign of ['1', 'X', '2'] as const) {
+      const { home_score, away_score } = SIGN_TO_CANONICAL_SCORE[sign]
+      expect(signFromScores(home_score, away_score)).toBe(sign)
+    }
   })
 })
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { scoreMatch } from '@/lib/scoring'
+import { scoreMatch, signFromScores } from '@/lib/scoring'
 import { cn } from '@/lib/utils'
 import { ChevronDown } from 'lucide-react'
 import { Flag } from '@/components/ui/flag'
@@ -139,7 +139,11 @@ function UserPredictionsCard({ member, matches, results, predictions, matchTeams
                           </div>
                           <div className="flex flex-col items-center gap-0.5 min-w-[70px]">
                             {result && <span className="font-black text-sm text-gold">{result.home_score}–{result.away_score}</span>}
-                            <span className="font-bold text-muted">{prediction.home_score}–{prediction.away_score}</span>
+                            <span className="font-bold text-muted">
+                              {match.is_bonus
+                                ? `${prediction.home_score}–${prediction.away_score}`
+                                : signFromScores(prediction.home_score, prediction.away_score)}
+                            </span>
                             {pts !== null && (
                               <span className={cn(
                                 'text-[10px] font-bold px-1.5 rounded-full',
