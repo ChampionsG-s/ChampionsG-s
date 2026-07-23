@@ -107,8 +107,9 @@ export function RankingTable({
         <h3 className="font-bold text-sm text-gold mb-3">Sistema de puntos</h3>
         <div className="grid grid-cols-2 gap-2 text-xs">
           {[
-            ['3 / 1pts', 'Exacto / ganador'],
-            ['0pts', 'Resultado incorrecto'],
+            ['1pt', 'Signo acertado (1 / X / 2) en partido normal'],
+            ['⭐ 3 / 1pts', 'Partido bonus: exacto / solo signo'],
+            ['0pts', 'Fallo'],
             ['Bloqueo', 'Apuesta cerrada tras la fecha límite'],
             ['Ver', 'Puedes ver lo que han apostado los demás tras bloquear'],
           ].map(([pts, label]) => (

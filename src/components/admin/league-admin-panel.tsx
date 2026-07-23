@@ -55,7 +55,7 @@ export function LeagueAdminPanel({
   poolId,
   members: initialMembers,
   openPhases: initialPhases,
-  matches,
+  matches: initialMatches,
   results: initialResults,
   currentUserId,
 }: LeagueAdminPanelProps) {
@@ -63,6 +63,7 @@ export function LeagueAdminPanel({
   const [tab, setTab] = useState<Tab>('members')
   const [members, setMembers] = useState(initialMembers)
   const [openPhases, setOpenPhases] = useState(initialPhases)
+  const [matches, setMatches] = useState(initialMatches)
   const [results, setResults] = useState(initialResults)
   const [loading, setLoading] = useState<string | null>(null)
 
@@ -190,6 +191,27 @@ export function LeagueAdminPanel({
     } catch (err) {
       console.error('Error setting result:', err)
       alert('Error al guardar el resultado. Intenta de nuevo.')
+    }
+  }
+
+  const handleToggleBonus = async (matchId: string) => {
+    setLoading(`bonus-${matchId}`)
+    try {
+      const match = matches.find(item => item.id === matchId)
+      const wasBonus = match?.is_bonus ?? false
+      const { error } = await supabase.rpc('toggle_bonus_match', { target_match_id: matchId })
+      if (error) throw error
+
+      setMatches(prev => prev.map(item => {
+        if (item.id === matchId) return { ...item, is_bonus: !wasBonus }
+        if (!wasBonus && item.jornada === match?.jornada) return { ...item, is_bonus: false }
+        return item
+      }))
+    } catch (err) {
+      console.error('Error toggling bonus match:', err)
+      alert('Error al cambiar el partido bonus. Intenta de nuevo.')
+    } finally {
+      setLoading(null)
     }
   }
 
@@ -335,8 +357,9 @@ export function LeagueAdminPanel({
                   <div className="space-y-2">
                     {jornadaMatches.map(match => {
                       const result = results.find(item => item.match_id === match.id)
+                      const isBonus = match.is_bonus ?? false
                       return (
-                        <div key={match.id} className="bg-surface-2 border border-border rounded-lg p-3">
+                        <div key={match.id} className={cn('bg-surface-2 border rounded-lg p-3', isBonus ? 'border-gold' : 'border-border')}>
                           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
                             <div className="flex items-center gap-1.5 text-sm font-semibold overflow-hidden">
                               <Flag team={match.home_team || match.home || ''} size="sm" />
@@ -358,9 +381,21 @@ export function LeagueAdminPanel({
                               <span className="truncate text-right">{match.away_team || match.away || '-'}</span>
                             </div>
                           </div>
-                          <p className="text-[10px] text-muted mt-2">
-                            {match.date}
-                          </p>
+                          <div className="flex items-center justify-between mt-2">
+                            <p className="text-[10px] text-muted">
+                              {match.date}
+                            </p>
+                            <button
+                              onClick={() => handleToggleBonus(match.id)}
+                              disabled={loading === `bonus-${match.id}`}
+                              className={cn(
+                                'text-[10px] font-bold px-2 py-1 rounded-full transition-colors disabled:opacity-50',
+                                isBonus ? 'bg-gold text-background' : 'bg-surface text-muted hover:text-gold'
+                              )}
+                            >
+                              {isBonus ? '⭐ Partido bonus' : 'Marcar como bonus'}
+                            </button>
+                          </div>
                         </div>
                       )
                     })}

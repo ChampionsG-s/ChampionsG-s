@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { scoreMatch } from '@/lib/scoring'
+import { scoreMatch, signFromScores, SIGN_TO_CANONICAL_SCORE, type MatchSign } from '@/lib/scoring'
 import { JORNADAS } from '@/lib/data/matches'
 import { Flag } from '@/components/ui/flag'
 import { cn } from '@/lib/utils'
@@ -174,6 +174,31 @@ export function MatchesList({
     }
   }, [isLocked, predictions, poolId, membership.user_id, supabase, matches])
 
+  const handleSignPrediction = useCallback(async (matchId: string, sign: MatchSign) => {
+    const match = matches.find(m => m.id === matchId)
+    if (!match || isLocked || !isJornadaOpen(jornadaForMatch(match))) return
+    try {
+      const { home_score: homeScore, away_score: awayScore } = SIGN_TO_CANONICAL_SCORE[sign]
+      const existing = predictions.find(p => p.match_id === matchId)
+      const updated = existing
+        ? { ...existing, home_score: homeScore, away_score: awayScore }
+        : { match_id: matchId, pool_id: poolId, user_id: membership.user_id, home_score: homeScore, away_score: awayScore }
+
+      setPredictions(prev => [...prev.filter(p => p.match_id !== matchId), updated as Prediction])
+
+      await supabase.from('predictions').upsert({
+        pool_id: poolId,
+        user_id: membership.user_id,
+        match_id: matchId,
+        home_score: homeScore,
+        away_score: awayScore,
+      }, { onConflict: 'pool_id,user_id,match_id' })
+    } catch (err) {
+      console.error('Error saving prediction:', err)
+      alert('Error al guardar la predicción. Intenta de nuevo.')
+    }
+  }, [isLocked, predictions, poolId, membership.user_id, supabase, matches])
+
   const handleLock = async () => {
     setSaving(true)
     try {
@@ -257,6 +282,7 @@ export function MatchesList({
             result={getResult(m.id)}
             isLocked={isLocked || !currentOpen}
             onPred={handlePrediction}
+            onSignPred={handleSignPrediction}
           />
         ))}
       </div>
@@ -286,23 +312,29 @@ interface MatchCardProps {
   result?: Result
   isLocked: boolean
   onPred: (id: string, side: 'home_score' | 'away_score', v: string) => void
+  onSignPred: (id: string, sign: MatchSign) => void
 }
 
-function MatchCard({ match, realTeams, pred, result, isLocked, onPred }: MatchCardProps) {
+function MatchCard({ match, realTeams, pred, result, isLocked, onPred, onSignPred }: MatchCardProps) {
   const hasResult = !!result
   const hasPred = !!pred
+  const isBonus = match.is_bonus ?? false
   const pts = hasPred && hasResult ? scoreMatch(pred, result, match) : null
   const displayHome = realTeams?.real_home || match.home_team || match.home || '?'
   const displayAway = realTeams?.real_away || match.away_team || match.away || '?'
   const jornadaLabel = match.jornada ? `Jornada ${match.jornada}` : (match.group_name?.trim() || `Jornada ${Math.max(1, Math.ceil(match.match_number / 10))}`)
 
   const ptsExactValue = match.pts_exact ?? 3
+  const ptsWinnerValue = match.pts_winner ?? 1
+  // Para partidos normales solo hay "acierto" o "fallo" (no hay nivel intermedio de exactitud)
+  const isFullHit = pts !== null && (isBonus ? pts === ptsExactValue : pts > 0)
 
   const cardClass = cn(
     'bg-surface-2 border rounded-xl p-3 transition-colors',
-    pts !== null && pts === ptsExactValue && 'border-green-700 bg-green-950/30',
-    pts !== null && pts > 0 && pts < ptsExactValue && 'border-amber-700 bg-amber-950/20',
-    pts === null && 'border-border',
+    isBonus && 'border-gold/50',
+    isFullHit && 'border-green-700 bg-green-950/30',
+    pts !== null && pts > 0 && !isFullHit && 'border-amber-700 bg-amber-950/20',
+    pts === null && !isBonus && 'border-border',
   )
 
   const dateStr = match.match_date || match.date || ''
@@ -314,6 +346,7 @@ function MatchCard({ match, realTeams, pred, result, isLocked, onPred }: MatchCa
         <span>{jornadaLabel}</span>
         <span>·</span>
         <span>{dateDisplay}</span>
+        {isBonus && <span className="text-gold font-bold">⭐ BONUS</span>}
       </div>
 
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
@@ -329,20 +362,30 @@ function MatchCard({ match, realTeams, pred, result, isLocked, onPred }: MatchCa
               {result!.source === 'api' && <span className="ml-1 text-[9px] text-green-400 font-normal">⚡</span>}
             </div>
           )}
-          <div className="flex items-center gap-1.5">
-            <ScoreInput value={pred?.home_score} disabled={isLocked || hasResult} onChange={(v) => onPred(match.id, 'home_score', v)} />
-            <span className="text-muted font-bold text-sm">:</span>
-            <ScoreInput value={pred?.away_score} disabled={isLocked || hasResult} onChange={(v) => onPred(match.id, 'away_score', v)} />
-          </div>
+          {isBonus ? (
+            <div className="flex items-center gap-1.5">
+              <ScoreInput value={pred?.home_score} disabled={isLocked || hasResult} onChange={(v) => onPred(match.id, 'home_score', v)} />
+              <span className="text-muted font-bold text-sm">:</span>
+              <ScoreInput value={pred?.away_score} disabled={isLocked || hasResult} onChange={(v) => onPred(match.id, 'away_score', v)} />
+            </div>
+          ) : (
+            <SignSelector
+              value={pred ? signFromScores(pred.home_score, pred.away_score) : undefined}
+              disabled={isLocked || hasResult}
+              onChange={(sign) => onSignPred(match.id, sign)}
+            />
+          )}
           {pts !== null && (
             <span className={cn(
               'text-xs font-bold px-2 py-0.5 rounded-full',
-              pts === match.pts_exact ? 'bg-green-900 text-green-300' : pts > 0 ? 'bg-amber-900 text-amber-300' : 'bg-red-900 text-red-300'
+              isFullHit ? 'bg-green-900 text-green-300' : pts > 0 ? 'bg-amber-900 text-amber-300' : 'bg-red-900 text-red-300'
             )}>
               {pts}pt{pts !== 1 ? 's' : ''}
             </span>
           )}
-          <span className="text-[9px] text-muted">Exacto=3pts · Ganador=1pt</span>
+          <span className="text-[9px] text-muted">
+            {isBonus ? `Exacto=${ptsExactValue}pts · Signo=${ptsWinnerValue}pt` : `Acierto de signo (1X2)=${ptsWinnerValue}pt`}
+          </span>
         </div>
 
         <div className="flex items-center gap-1.5 font-semibold text-sm overflow-hidden flex-row-reverse">
@@ -350,6 +393,37 @@ function MatchCard({ match, realTeams, pred, result, isLocked, onPred }: MatchCa
           <span className="truncate text-right">{displayAway}</span>
         </div>
       </div>
+    </div>
+  )
+}
+
+interface SignSelectorProps {
+  value?: MatchSign
+  disabled?: boolean
+  onChange: (sign: MatchSign) => void
+}
+
+function SignSelector({ value, disabled, onChange }: SignSelectorProps) {
+  const signs: MatchSign[] = ['1', 'X', '2']
+  return (
+    <div className="flex items-center gap-1.5">
+      {signs.map((sign) => (
+        <button
+          key={sign}
+          type="button"
+          disabled={disabled}
+          onClick={() => onChange(sign)}
+          className={cn(
+            'w-9 h-9 rounded-lg font-black text-sm transition-colors border',
+            value === sign
+              ? 'bg-gold border-gold text-background'
+              : 'bg-surface border-border text-cream hover:border-gold',
+            disabled && 'opacity-35 cursor-not-allowed hover:border-border'
+          )}
+        >
+          {sign}
+        </button>
+      ))}
     </div>
   )
 }
