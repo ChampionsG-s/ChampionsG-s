@@ -31,11 +31,8 @@ export default function LoginPage() {
   const [splashExiting, setSplashExiting] = useState(false)
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setSplashExiting(true)
-      setTimeout(() => setShowSplash(false), 1000)
-    }, 1000)
-    return () => clearTimeout(timer)
+    // Mostrar login inmediatamente sin espera
+    setShowSplash(false)
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
