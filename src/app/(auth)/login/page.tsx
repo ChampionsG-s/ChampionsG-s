@@ -37,27 +37,25 @@ export default function LoginPage() {
 
     try {
       if (mode === 'register') {
-        const { data: existing } = await supabase
-          .from('users')
-          .select('id')
-          .eq('username', username.trim())
-          .maybeSingle()
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, email, password }),
+        })
+        const body = await res.json()
 
-        if (existing) {
-          setError('Ese nombre ya está en uso.')
+        if (!res.ok) {
+          setError(body.error ?? 'Error inesperado. Inténtalo de nuevo.')
           return
         }
 
-        const { data, error: signUpError } = await supabase.auth.signUp({
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
-          options: {
-            data: { username: username.trim() },
-          },
         })
 
-        if (signUpError) {
-          setError(signUpError.message)
+        if (signInError) {
+          setError(signInError.message)
           return
         }
 
