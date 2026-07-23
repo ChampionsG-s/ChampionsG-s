@@ -34,7 +34,7 @@ export default function LoginPage() {
     const timer = setTimeout(() => {
       setSplashExiting(true)
       setTimeout(() => setShowSplash(false), 1000)
-    }, 5000)
+    }, 1000)
     return () => clearTimeout(timer)
   }, [])
 
