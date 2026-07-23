@@ -27,12 +27,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [showSplash, setShowSplash] = useState(true)
-  const [splashExiting, setSplashExiting] = useState(false)
+  const [showForm, setShowForm] = useState(false)
 
   useEffect(() => {
-    // Mostrar login inmediatamente sin espera
-    setShowSplash(false)
+    // Transición lenta del formulario (300ms después de cargar)
+    const timer = setTimeout(() => {
+      setShowForm(true)
+    }, 300)
+    return () => clearTimeout(timer)
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -117,19 +119,17 @@ export default function LoginPage() {
       {/* Login Form */}
       <div className={cn(
         'absolute inset-0 z-10 flex flex-col items-center justify-center px-4',
-        'transition-all duration-1000',
-        showSplash ? 'opacity-0 pointer-events-none' : 'opacity-100 [&>*]:transition-all [&>*]:duration-[2000ms]'
+        'transition-all duration-2000',
+        showForm ? 'opacity-100' : 'opacity-0 pointer-events-none'
       )}>
         <div className="text-center mb-8">
-          <img 
-            src="/logos/champions-logo.png" 
-            alt="Champions G's" 
-            className="h-32 drop-shadow-lg mx-auto mb-4"
-          />
-          <p className="text-cream text-sm drop-shadow-lg">Crea o únete a tu quiniela de Liga</p>
+          <h1 className="text-6xl font-black tracking-wider text-cream drop-shadow-lg">
+            CHAMPIONS <span className="text-gold">G'S</span>
+          </h1>
+          <p className="text-cream text-sm mt-2 drop-shadow-lg">Crea o únete a tu quiniela de Liga</p>
         </div>
 
-      <div className="w-full max-w-sm backdrop-blur-md bg-black/30 rounded-xl p-8 border border-gold/20 transition-all duration-[2000ms]">
+      <div className="w-full max-w-sm backdrop-blur-md bg-black/30 rounded-xl p-8 border border-gold/20">
         <div className="flex gap-1 bg-surface-2/50 rounded-lg p-1 mb-4 backdrop-blur-sm">
           {(['login', 'register'] as Mode[]).map((m) => (
             <button
