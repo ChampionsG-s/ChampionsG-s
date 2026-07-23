@@ -100,27 +100,28 @@ export default function LoginPage() {
   }
 
   return (
-    <>
-      {/* Video Background */}
-      <div className="fixed inset-0 w-full h-full overflow-hidden z-0">
+    <div className="relative min-h-screen w-full bg-black overflow-hidden">
+      {/* Video Background - Always Visible */}
+      <div className="absolute inset-0 w-full h-full z-0">
         <video
           autoPlay
           muted
           loop
           playsInline
-          className="absolute inset-0 w-full h-full object-cover"
+          className="w-full h-full object-cover"
         >
           <source src="/videos/shield-celebration.mp4" type="video/mp4" />
+          Tu navegador no soporta el elemento video
         </video>
-        {/* Dark overlay for better contrast */}
-        <div className="absolute inset-0 bg-black/40"></div>
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-black/20"></div>
       </div>
 
       {/* Login Form */}
       <div className={cn(
-        'relative z-10 min-h-screen flex flex-col items-center justify-center px-4',
+        'absolute inset-0 z-10 flex flex-col items-center justify-center px-4',
         'transition-all duration-1000',
-        showSplash ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'
+        showSplash ? 'opacity-0 pointer-events-none' : 'opacity-100'
       )}>
         <div className="text-center mb-8">
           <p className="text-xs tracking-widest text-gold font-bold uppercase mb-2 drop-shadow-lg">
@@ -191,6 +192,6 @@ export default function LoginPage() {
         </form>
       </div>
       </div>
-    </>
+    </div>
   )
 }
