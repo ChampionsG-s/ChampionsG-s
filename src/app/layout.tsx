@@ -9,8 +9,8 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Tipstr · World Cup 2026',
-  description: 'La porra definitiva para el Mundial 2026',
+  title: 'Champions G\'s',
+  description: 'La quiniela de la Liga española de la próxima temporada',
   icons: { icon: '/favicon.svg' },
 }
 

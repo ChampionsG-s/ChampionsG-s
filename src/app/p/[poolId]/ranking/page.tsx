@@ -10,15 +10,11 @@ export default async function RankingPage({
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [membersRes, usersRes, predsRes, resultsRes, awardPredsRes, awardResultsRes, spainPredsRes, spainResultsRes, matchesRes] = await Promise.all([
+  const [membersRes, usersRes, predsRes, resultsRes, matchesRes] = await Promise.all([
     supabase.from('pool_members').select('*').eq('pool_id', poolId).eq('status', 'approved'),
     supabase.from('users').select('*'),
     supabase.from('predictions').select('*').eq('pool_id', poolId),
     supabase.from('results').select('*').eq('pool_id', poolId),
-    supabase.from('award_predictions').select('*').eq('pool_id', poolId),
-    supabase.from('global_award_results').select('*'),
-    supabase.from('spain_predictions').select('*').eq('pool_id', poolId),
-    supabase.from('global_spain_results').select('*'),
     supabase.from('matches').select('*'),
   ])
 
@@ -34,10 +30,6 @@ export default async function RankingPage({
       members={members}
       predictions={predsRes.data ?? []}
       results={resultsRes.data ?? []}
-      awardPredictions={awardPredsRes.data ?? []}
-      awardResults={awardResultsRes.data ?? []}
-      spainPredictions={spainPredsRes.data ?? []}
-      spainResults={spainResultsRes.data ?? []}
       matches={matchesRes.data ?? []}
       currentUserId={user!.id}
     />

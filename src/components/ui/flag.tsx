@@ -21,9 +21,17 @@ export function Flag({ team, size = 'md', className }: FlagProps) {
   if (!code) {
     return (
       <span
-        className={cn('inline-block rounded-sm bg-border flex-shrink-0', cls, className)}
+        className={cn('inline-flex items-center justify-center rounded-sm bg-border text-[9px] font-black text-background flex-shrink-0', cls, className)}
         title={team}
-      />
+      >
+        {team
+          .split(/\s+/)
+          .filter(Boolean)
+          .slice(0, 2)
+          .map(part => part[0]?.toUpperCase())
+          .join('')
+          .slice(0, 2)}
+      </span>
     )
   }
 

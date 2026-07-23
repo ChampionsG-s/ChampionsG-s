@@ -93,12 +93,12 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col items-center justify-center px-4">
       <div className="text-center mb-8">
         <p className="text-xs tracking-widest text-gold font-bold uppercase mb-2">
-          World Cup 2026
+          Champions G's
         </p>
         <h1 className="text-6xl font-black tracking-wider text-cream">
           TIP<span className="text-gold">STR</span>
         </h1>
-        <p className="text-muted text-sm mt-2">Crea o únete a tu porra del Mundial</p>
+        <p className="text-muted text-sm mt-2">Crea o únete a tu quiniela de Liga</p>
       </div>
 
       <div className="w-full max-w-sm">

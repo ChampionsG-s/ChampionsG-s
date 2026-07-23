@@ -47,7 +47,7 @@ export function PoolsView({ memberships: initial, userId, isPlatformAdmin }: Poo
       })
       if (rpcError) throw rpcError
 
-      router.push(`/p/${data.id}/partidos`)
+      router.push(`/p/${data.id}/jornadas`)
     } catch (err) {
       setError('No se pudo crear la porra. Inténtalo de nuevo.')
       console.error(err)
@@ -70,7 +70,7 @@ export function PoolsView({ memberships: initial, userId, isPlatformAdmin }: Poo
         setMode('list')
         router.refresh()
       } else {
-        router.push(`/p/${data.pool_id}/partidos`)
+        router.push(`/p/${data.pool_id}/jornadas`)
       }
     } catch (err: any) {
       setError(err.message?.includes('no válido') ? 'Código no válido.' : 'Error al unirse a la porra.')
@@ -107,12 +107,12 @@ export function PoolsView({ memberships: initial, userId, isPlatformAdmin }: Poo
 
       <div className="text-center mb-8">
         <p className="text-xs tracking-widest text-gold font-bold uppercase mb-2">
-          World Cup 2026
+          Champions G's
         </p>
         <h1 className="text-5xl font-black tracking-wider text-cream">
           TIP<span className="text-gold">STR</span>
         </h1>
-        <p className="text-muted text-sm mt-2">Tus porras</p>
+        <p className="text-muted text-sm mt-2">Tus quinielas</p>
       </div>
 
       {mode === 'list' && (
@@ -145,7 +145,7 @@ export function PoolsView({ memberships: initial, userId, isPlatformAdmin }: Poo
               {approved.map(m => (
                 <button
                   key={m.id}
-                  onClick={() => router.push(`/p/${m.pools.id}/partidos`)}
+                  onClick={() => router.push(`/p/${m.pools.id}/jornadas`)}
                   className="card w-full text-left hover:border-gold transition-colors flex items-center justify-between"
                 >
                   <div>

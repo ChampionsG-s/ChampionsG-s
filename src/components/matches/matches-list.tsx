@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { PHASE_INFO, PHASE_ORDER, GROUPS } from '@/lib/data/matches'
+import { JORNADAS } from '@/lib/data/matches'
 import { Flag } from '@/components/ui/flag'
 import { cn } from '@/lib/utils'
 import type { Match, Result, Prediction, PoolMember, PoolMatchTeams } from '@/types'
@@ -45,7 +45,7 @@ export function MatchesList({
   const [predictions, setPredictions] = useState<Prediction[]>(initialPredictions)
   const [openPhases, setOpenPhases] = useState<OpenPhase[]>(initialOpenPhases)
   const [matchTeams, setMatchTeams] = useState<PoolMatchTeams[]>(initialMatchTeams)
-  const [phase, setPhase] = useState<string>('grupos')
+  const [jornada, setJornada] = useState<string>('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const supabase = createClient()
@@ -85,13 +85,32 @@ export function MatchesList({
     return () => { supabase.removeChannel(channel) }
   }, [supabase, poolId])
 
-  const isPhaseOpen = (p: string) => p === 'grupos' || (openPhases.find(op => op.phase === p)?.is_open ?? false)
+  const jornadas = useMemo(() => {
+    const labels = Array.from(new Set(matches.map(m => m.group_name?.trim()).filter(Boolean) as string[]))
+    return labels.length > 0 ? labels : JORNADAS.slice(0, 1)
+  }, [matches])
+
+  const jornadaForMatch = (match: Match) => match.group_name?.trim() || `Jornada ${Math.max(1, Math.ceil(match.match_number / 10))}`
+  const jornadaDeadline = (label: string) => {
+    const items = matches.filter(m => jornadaForMatch(m) === label)
+    return items.reduce((earliest, match) => {
+      const time = new Date(match.date).getTime()
+      return Number.isFinite(time) && time < earliest ? time : earliest
+    }, Number.POSITIVE_INFINITY)
+  }
+  const isJornadaOpen = (label: string) => {
+    const manual = openPhases.find(op => op.phase === label)?.is_open
+    if (manual !== undefined) return manual
+    const deadline = jornadaDeadline(label)
+    return Number.isFinite(deadline) ? Date.now() < deadline : true
+  }
   const getPred = (matchId: string) => predictions.find(p => p.match_id === matchId)
   const getResult = (matchId: string) => results.find(r => r.match_id === matchId)
   const getRealTeams = (matchId: string) => matchTeams.find(mt => mt.match_id === matchId)
 
   const handlePrediction = useCallback(async (matchId: string, side: 'home_score' | 'away_score', value: string) => {
-    if (isLocked) return
+    const match = matches.find(m => m.id === matchId)
+    if (!match || isLocked || !isJornadaOpen(jornadaForMatch(match))) return
     const num = value === '' ? 0 : Math.min(30, Math.max(0, parseInt(value) || 0))
     const existing = predictions.find(p => p.match_id === matchId)
     const homeScore = side === 'home_score' ? num : (existing?.home_score ?? 0)
@@ -109,7 +128,7 @@ export function MatchesList({
       home_score: homeScore,
       away_score: awayScore,
     }, { onConflict: 'pool_id,user_id,match_id' })
-  }, [isLocked, predictions, poolId, membership.user_id, supabase])
+  }, [isLocked, predictions, poolId, membership.user_id, supabase, matches])
 
   const handleLock = async () => {
     setSaving(true)
@@ -124,115 +143,82 @@ export function MatchesList({
     setTimeout(() => setSaved(false), 3000)
   }
 
-  const visibleMatches = phase === 'grupos'
-    ? matches.filter(m => m.phase === 'grupos')
-    : matches.filter(m => phase === 'semis' ? (m.phase === 'semis' || m.phase === '3er') : m.phase === phase)
+  const visibleMatches = jornada
+    ? matches.filter(m => jornadaForMatch(m) === jornada)
+    : matches.filter(m => jornadaForMatch(m) === jornadas[0])
 
-  const phaseInfo = PHASE_INFO[phase]
-  const phaseTabs = PHASE_ORDER.filter(p => p !== '3er')
+  const currentJornada = jornada || jornadas[0]
+  const currentOpen = isJornadaOpen(currentJornada)
 
   return (
     <div className="space-y-4">
-      {isLocked ? (
+      {!currentOpen ? (
         <div className="bg-blue-900/30 border border-blue-700 rounded-xl px-4 py-3 text-sm">
-          🔒 Partidos bloqueados · Ve a <strong>Ver</strong> para ver las predicciones de tus amigos
+          🔒 Jornada cerrada · Ya no se puede apostar en esta jornada
         </div>
       ) : (
         <div className="bg-amber-900/30 border border-amber-700 rounded-xl px-4 py-3 text-sm text-amber-200">
-          ⚠️ Al guardar, tus predicciones quedarán <strong>bloqueadas definitivamente</strong>
+          ⚠️ Las apuestas se cierran cuando llegue la fecha límite de la jornada
         </div>
       )}
+
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex gap-1.5 flex-wrap">
+          {jornadas.map((label) => {
+            const open = isJornadaOpen(label)
+            const active = currentJornada === label
+            return (
+              <button
+                key={label}
+                onClick={() => setJornada(label)}
+                className={cn(
+                  'px-3 py-1.5 rounded-full text-xs font-bold transition-all',
+                  active
+                    ? 'bg-gold text-background'
+                    : open
+                      ? 'border border-border text-muted hover:border-gold hover:text-gold'
+                      : 'border border-border text-border cursor-not-allowed opacity-50'
+                )}
+              >
+                {label} {!open && '🔒'}
+              </button>
+            )
+          })}
+        </div>
+
+        <a href={`/p/${poolId}/ver`} className="text-xs font-bold text-gold hover:text-cream transition-colors">
+          Ver apuestas
+        </a>
+      </div>
 
       {isAdmin && (
         <div className="bg-red-900/20 border border-red-800 rounded-xl px-4 py-2 text-xs text-red-300 font-bold uppercase tracking-wide">
-          Admin — Los resultados se actualizan automáticamente via API
+          Admin — controla los resultados y la apertura de cada jornada
         </div>
       )}
 
-      <div className="flex gap-1.5 flex-wrap">
-        {phaseTabs.map((key) => {
-          const open = isPhaseOpen(key)
-          const label = PHASE_INFO[key]?.label ?? key
-          return (
-            <button
-              key={key}
-              onClick={() => open && setPhase(key)}
-              disabled={!open}
-              className={cn(
-                'px-3 py-1.5 rounded-full text-xs font-bold transition-all',
-                phase === key
-                  ? 'bg-gold text-background'
-                  : open
-                    ? 'border border-border text-muted hover:border-gold hover:text-gold'
-                    : 'border border-border text-border cursor-not-allowed opacity-50'
-              )}
-            >
-              {label} {!open && '🔒'}
-            </button>
-          )
-        })}
+      <div className="space-y-2">
+        {visibleMatches.map(m => (
+          <MatchCard
+            key={m.id}
+            match={m}
+            realTeams={getRealTeams(m.id)}
+            pred={getPred(m.id)}
+            result={getResult(m.id)}
+            isLocked={isLocked || !currentOpen}
+            onPred={handlePrediction}
+          />
+        ))}
       </div>
-
-      {phase !== 'grupos' && phaseInfo && (
-        <div className="text-center text-xs text-muted">
-          Exacto = <span className="text-gold font-bold">{phaseInfo.ptsExact}pts</span>
-          {' · '}
-          Ganador = <span className="text-gold font-bold">{phaseInfo.ptsWinner}pts</span>
-        </div>
-      )}
-
-      {phase === 'grupos'
-        ? Object.keys(GROUPS).map(g => {
-            const groupMatches = visibleMatches.filter(m => m.group_name === g)
-            if (!groupMatches.length) return null
-            return (
-              <div key={g}>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="font-black text-gold text-lg tracking-widest">GRUPO {g}</span>
-                  {g === 'H' && <span className="text-xs text-[#c60b1e] font-bold">🇪🇸 España</span>}
-                  <div className="flex-1 h-px bg-border" />
-                </div>
-                <div className="space-y-2">
-                  {groupMatches.map(m => (
-                    <MatchCard
-                      key={m.id}
-                      match={m}
-                      realTeams={getRealTeams(m.id)}
-                      pred={getPred(m.id)}
-                      result={getResult(m.id)}
-                      isLocked={isLocked}
-                      onPred={handlePrediction}
-                    />
-                  ))}
-                </div>
-              </div>
-            )
-          })
-        : (
-          <div className="space-y-2">
-            {visibleMatches.map(m => (
-              <MatchCard
-                key={m.id}
-                match={m}
-                realTeams={getRealTeams(m.id)}
-                pred={getPred(m.id)}
-                result={getResult(m.id)}
-                isLocked={isLocked}
-                onPred={handlePrediction}
-              />
-            ))}
-          </div>
-        )
-      }
 
       {!isLocked && (
         <div className="fixed bottom-16 left-0 right-0 z-30 bg-surface-2 border-t border-gold px-4 py-3 shadow-2xl">
           <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
             <span className="text-sm font-semibold text-amber-200">
-              {saved ? '✓ Guardado y bloqueado para siempre' : '⚠️ Guardar bloqueará definitivamente'}
+              {currentOpen ? (saved ? '✓ Guardado' : '💡 Puedes bloquear tus apuestas cuando quieras') : '🔒 Jornada cerrada · Bloquea para poder ver apuestas ajenas'}
             </span>
             <button onClick={handleLock} disabled={saving} className="btn-primary text-sm disabled:opacity-50">
-              {saving ? 'Guardando...' : '🔒 Guardar y bloquear'}
+              {saving ? 'Guardando...' : '🔒 Bloquear apuestas'}
             </button>
           </div>
         </div>
@@ -258,26 +244,21 @@ function MatchCard({ match, realTeams, pred, result, isLocked, onPred }: MatchCa
   const pts = hasPred && hasResult ? scoreMatch(pred, result, match) : null
   const displayHome = realTeams?.real_home || match.home
   const displayAway = realTeams?.real_away || match.away
-  const isSpain = displayHome === 'España' || displayAway === 'España'
-  const isKO = match.phase !== 'grupos'
+  const jornadaLabel = match.group_name?.trim() || `Jornada ${Math.max(1, Math.ceil(match.match_number / 10))}`
 
   const cardClass = cn(
     'bg-surface-2 border rounded-xl p-3 transition-colors',
-    isSpain && 'border-l-2 border-l-[#c60b1e] border-border',
     pts !== null && pts === match.pts_exact && 'border-green-700 bg-green-950/30',
     pts !== null && pts > 0 && pts < match.pts_exact && 'border-amber-700 bg-amber-950/20',
-    !isSpain && pts === null && 'border-border',
+    pts === null && 'border-border',
   )
 
   return (
     <div className={cardClass}>
       <div className="text-center text-xs text-muted mb-2 flex items-center justify-center gap-2">
+        <span>{jornadaLabel}</span>
+        <span>·</span>
         <span>{match.date}</span>
-        {isKO && (
-          <span className="text-[10px] bg-gold/10 text-gold px-1.5 py-0.5 rounded-full">
-            Exacto {match.pts_exact}pts · Ganador {match.pts_winner}pts
-          </span>
-        )}
       </div>
 
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
@@ -306,7 +287,7 @@ function MatchCard({ match, realTeams, pred, result, isLocked, onPred }: MatchCa
               {pts}pt{pts !== 1 ? 's' : ''}
             </span>
           )}
-          {match.phase === 'grupos' && <span className="text-[9px] text-muted">Exacto=3pts · Ganador=1pt</span>}
+          <span className="text-[9px] text-muted">Exacto=3pts · Ganador=1pt</span>
         </div>
 
         <div className="flex items-center gap-1.5 font-semibold text-sm overflow-hidden flex-row-reverse">

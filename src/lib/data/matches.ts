@@ -13,22 +13,32 @@ export const TEAM_FLAGS: Record<string, string> = {
   'Inglaterra': 'gb-eng', 'Croacia': 'hr', 'Ghana': 'gh', 'Panamá': 'pa',
 }
 
-export const GROUPS: Record<string, string[]> = {
-  A: ['México', 'Sudáfrica', 'República Checa', 'Corea del Sur'],
-  B: ['Canadá', 'Bosnia y Herzegovina', 'Qatar', 'Suiza'],
-  C: ['Brasil', 'Marruecos', 'Haití', 'Escocia'],
-  D: ['Estados Unidos', 'Paraguay', 'Australia', 'Turquía'],
-  E: ['Alemania', 'Curaçao', 'Costa de Marfil', 'Ecuador'],
-  F: ['Países Bajos', 'Japón', 'Suecia', 'Túnez'],
-  G: ['Bélgica', 'Egipto', 'Irán', 'Nueva Zelanda'],
-  H: ['España', 'Cabo Verde', 'Arabia Saudí', 'Uruguay'],
-  I: ['Francia', 'Senegal', 'Irak', 'Noruega'],
-  J: ['Argentina', 'Argelia', 'Austria', 'Jordania'],
-  K: ['Portugal', 'RD Congo', 'Uzbekistán', 'Colombia'],
-  L: ['Inglaterra', 'Croacia', 'Ghana', 'Panamá'],
-}
+export const LEAGUE_TEAMS = [
+  'FC Barcelona',
+  'Real Madrid',
+  'Atlético de Madrid',
+  'Athletic Club',
+  'Villarreal',
+  'Real Betis',
+  'Real Sociedad',
+  'Valencia',
+  'Sevilla',
+  'Osasuna',
+  'Celta de Vigo',
+  'Rayo Vallecano',
+  'Getafe',
+  'Mallorca',
+  'Las Palmas',
+  'Girona',
+  'Alavés',
+  'Espanyol',
+  'Leganés',
+  'Real Valladolid',
+] as const
 
-export const ALL_TEAMS = Object.values(GROUPS).flat()
+export const ALL_TEAMS = [...LEAGUE_TEAMS]
+
+export const JORNADAS = Array.from({ length: 38 }, (_, index) => `Jornada ${index + 1}`)
 
 export const AWARDS = [
   { id: 'golden_ball', label: 'Balón de Oro', icon: '🥇', desc: 'Mejor jugador del torneo', pts: 10, type: 'player' as const },

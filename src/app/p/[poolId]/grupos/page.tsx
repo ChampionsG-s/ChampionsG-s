@@ -1,5 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
-import { GroupStandings } from '@/components/groups/group-standings'
+import { redirect } from 'next/navigation'
 
 export default async function GruposPage({
   params,
@@ -7,18 +6,5 @@ export default async function GruposPage({
   params: Promise<{ poolId: string }>
 }) {
   const { poolId } = await params
-  const supabase = await createClient()
-
-  const [matchesRes, resultsRes] = await Promise.all([
-    supabase.from('matches').select('*').eq('phase', 'grupos').order('match_number'),
-    supabase.from('results').select('*').eq('pool_id', poolId),
-  ])
-
-  return (
-    <GroupStandings
-      poolId={poolId}
-      matches={matchesRes.data ?? []}
-      results={resultsRes.data ?? []}
-    />
-  )
+  redirect(`/p/${poolId}/clasificacion`)
 }

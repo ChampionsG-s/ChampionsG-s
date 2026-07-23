@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { GROUPS, TEAM_FLAGS } from '@/lib/data/matches'
+import { ALL_TEAMS } from '@/lib/data/matches'
 import { Flag } from '@/components/ui/flag'
 import { cn } from '@/lib/utils'
 import type { Match, Result } from '@/types'
@@ -25,8 +25,8 @@ interface StandingRow {
   points: number
 }
 
-function calcStandings(groupKey: string, groupMatches: Match[], resultsMap: Map<string, Result>): StandingRow[] {
-  const teams = GROUPS[groupKey]
+function calcStandings(_groupKey: string, groupMatches: Match[], resultsMap: Map<string, Result>): StandingRow[] {
+  const teams = ALL_TEAMS
   const table = new Map<string, StandingRow>()
   teams.forEach(t => table.set(t, { team: t, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, gc: 0, gd: 0, points: 0 }))
 
@@ -79,88 +79,69 @@ export function GroupStandings({ poolId, matches, results: initialResults }: Gro
 
   const resultsMap = useMemo(() => new Map(results.map(r => [r.match_id, r])), [results])
 
-  const standingsByGroup = useMemo(() => {
-    return Object.keys(GROUPS).map(g => ({
-      group: g,
-      hasSpain: GROUPS[g].includes('España'),
-      hasResults: matches.some(m => m.group_name === g && resultsMap.has(m.id)),
-      rows: calcStandings(g, matches.filter(m => m.group_name === g), resultsMap),
-    }))
-  }, [matches, resultsMap])
+  const standings = useMemo(() => calcStandings('league', matches, resultsMap), [matches, resultsMap])
 
   return (
     <div className="space-y-4">
       <div className="card mb-2">
-        <h2 className="font-black text-lg tracking-wide text-gold mb-1">📊 Clasificación de grupos</h2>
+        <h2 className="font-black text-lg tracking-wide text-gold mb-1">📊 Clasificación</h2>
         <p className="text-xs text-muted">
-          Actualizado automáticamente con cada resultado · 1º y 2º clasifican directamente · Los mejores 3os también pasan
+          Tabla de liga actualizada automáticamente con cada resultado
         </p>
       </div>
 
-      {standingsByGroup.map(({ group, hasSpain, hasResults, rows }) => (
-        <div key={group} className="bg-surface border border-border rounded-xl overflow-hidden">
-          <div className="bg-surface-2 px-4 py-2.5 flex items-center gap-2">
-            <span className="font-black text-base tracking-widest text-gold">GRUPO {group}</span>
-            {hasSpain && <span className="text-xs text-[#c60b1e] font-bold">🇪🇸 España</span>}
-          </div>
-
-          {!hasResults ? (
-            <p className="text-center py-4 text-sm text-muted">Sin resultados aún</p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-[10px] text-muted uppercase tracking-wide border-b border-border">
-                  <th className="text-left pl-3 py-1.5 w-1/2">Selección</th>
-                  <th className="py-1.5" title="Partidos jugados">PJ</th>
-                  <th className="py-1.5" title="Ganados">G</th>
-                  <th className="py-1.5" title="Empatados">E</th>
-                  <th className="py-1.5" title="Perdidos">P</th>
-                  <th className="py-1.5" title="Goles a favor">GF</th>
-                  <th className="py-1.5" title="Goles en contra">GC</th>
-                  <th className="py-1.5" title="Diferencia de goles">DG</th>
-                  <th className="pr-3 py-1.5" title="Puntos">Pts</th>
+      <div className="bg-surface border border-border rounded-xl overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-[10px] text-muted uppercase tracking-wide border-b border-border">
+              <th className="text-left pl-3 py-1.5 w-1/2">Equipo</th>
+              <th className="py-1.5" title="Partidos jugados">PJ</th>
+              <th className="py-1.5" title="Ganados">G</th>
+              <th className="py-1.5" title="Empatados">E</th>
+              <th className="py-1.5" title="Perdidos">P</th>
+              <th className="py-1.5" title="Goles a favor">GF</th>
+              <th className="py-1.5" title="Goles en contra">GC</th>
+              <th className="py-1.5" title="Diferencia de goles">DG</th>
+              <th className="pr-3 py-1.5" title="Puntos">Pts</th>
+            </tr>
+          </thead>
+          <tbody>
+            {standings.map((row, i) => {
+              const pos = i + 1
+              return (
+                <tr key={row.team} className={cn('border-b border-surface-2 last:border-0')}>
+                  <td className="pl-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        'font-black text-base w-4 text-center',
+                        pos === 1 ? 'text-gold' : pos === 2 ? 'text-gray-400' : pos === 3 ? 'text-muted' : 'text-red-900'
+                      )}>
+                        {pos}
+                      </span>
+                      <Flag team={row.team} size="sm" />
+                      <span className="font-semibold truncate">{row.team}</span>
+                    </div>
+                  </td>
+                  <td className="text-center py-2">{row.played}</td>
+                  <td className="text-center py-2">{row.won}</td>
+                  <td className="text-center py-2">{row.drawn}</td>
+                  <td className="text-center py-2">{row.lost}</td>
+                  <td className="text-center py-2">{row.gf}</td>
+                  <td className="text-center py-2">{row.gc}</td>
+                  <td className="text-center py-2">
+                    <span className={cn(
+                      row.gd > 0 ? 'text-green-400' : row.gd < 0 ? 'text-red-400' : 'text-muted'
+                    )}>
+                      {row.gd > 0 ? `+${row.gd}` : row.gd}
+                    </span>
+                  </td>
+                  <td className="text-center pr-3 py-2 font-black text-gold">{row.points}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, i) => {
-                  const pos = i + 1
-                  const eliminated = pos === 4
-                  return (
-                    <tr key={row.team} className={cn('border-b border-surface-2 last:border-0', eliminated && 'opacity-45')}>
-                      <td className="pl-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <span className={cn(
-                            'font-black text-base w-4 text-center',
-                            pos === 1 ? 'text-gold' : pos === 2 ? 'text-gray-400' : pos === 3 ? 'text-muted' : 'text-red-900'
-                          )}>
-                            {pos}
-                          </span>
-                          <Flag team={row.team} size="sm" />
-                          <span className="font-semibold truncate">{row.team}</span>
-                        </div>
-                      </td>
-                      <td className="text-center py-2">{row.played}</td>
-                      <td className="text-center py-2">{row.won}</td>
-                      <td className="text-center py-2">{row.drawn}</td>
-                      <td className="text-center py-2">{row.lost}</td>
-                      <td className="text-center py-2">{row.gf}</td>
-                      <td className="text-center py-2">{row.gc}</td>
-                      <td className="text-center py-2">
-                        <span className={cn(
-                          row.gd > 0 ? 'text-green-400' : row.gd < 0 ? 'text-red-400' : 'text-muted'
-                        )}>
-                          {row.gd > 0 ? `+${row.gd}` : row.gd}
-                        </span>
-                      </td>
-                      <td className="text-center pr-3 py-2 font-black text-gold">{row.points}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
-      ))}
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

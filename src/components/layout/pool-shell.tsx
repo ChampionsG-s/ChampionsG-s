@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
-import { Trophy, Target, Flag, Award, Eye, BarChart3, Settings, LogOut, ArrowLeft, Copy, Check } from 'lucide-react'
+import { Trophy, CalendarDays, Table2, Settings, LogOut, ArrowLeft, Copy, Check } from 'lucide-react'
 import { useState } from 'react'
 import type { Pool, PoolMember } from '@/types'
 
@@ -15,13 +15,11 @@ interface PoolShellProps {
   children: React.ReactNode
 }
 
-const navItems = (poolId: string) => [
-  { href: `/p/${poolId}/partidos`, label: 'Partidos', icon: Target },
-  { href: `/p/${poolId}/grupos`, label: 'Grupos', icon: BarChart3 },
-  { href: `/p/${poolId}/espana`, label: 'España', icon: Flag },
-  { href: `/p/${poolId}/premios`, label: 'Premios', icon: Award },
-  { href: `/p/${poolId}/ver`, label: 'Ver', icon: Eye },
+const navItems = (poolId: string, isAdmin: boolean) => [
+  { href: `/p/${poolId}/jornadas`, label: 'Jornadas', icon: CalendarDays },
+  { href: `/p/${poolId}/clasificacion`, label: 'Clasificación', icon: Table2 },
   { href: `/p/${poolId}/ranking`, label: 'Ranking', icon: Trophy },
+  ...(isAdmin ? [{ href: `/p/${poolId}/admin`, label: 'Admin', icon: Settings }] : []),
 ]
 
 export function PoolShell({ pool, membership, username, children }: PoolShellProps) {
@@ -104,7 +102,7 @@ export function PoolShell({ pool, membership, username, children }: PoolShellPro
       {/* Bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-surface-2 border-t border-border">
         <div className="max-w-3xl mx-auto flex">
-          {navItems(pool.id).map(({ href, label, icon: Icon }) => {
+          {navItems(pool.id, isAdmin).map(({ href, label, icon: Icon }) => {
             const active = pathname === href
             return (
               <Link
