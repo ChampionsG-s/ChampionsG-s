@@ -121,10 +121,12 @@ export default function LoginPage() {
         showSplash ? 'opacity-0 pointer-events-none' : 'opacity-100 [&>*]:transition-all [&>*]:duration-[2000ms]'
       )}>
         <div className="text-center mb-8">
-          <h1 className="text-6xl font-black tracking-wider text-cream drop-shadow-lg">
-            CHAMPIONS <span className="text-gold">G'S</span>
-          </h1>
-          <p className="text-cream text-sm mt-2 drop-shadow-lg">Crea o únete a tu quiniela de Liga</p>
+          <img 
+            src="/logos/champions-logo.png" 
+            alt="Champions G's" 
+            className="h-32 drop-shadow-lg mx-auto mb-4"
+          />
+          <p className="text-cream text-sm drop-shadow-lg">Crea o únete a tu quiniela de Liga</p>
         </div>
 
       <div className="w-full max-w-sm backdrop-blur-md bg-black/30 rounded-xl p-8 border border-gold/20 transition-all duration-[2000ms]">
