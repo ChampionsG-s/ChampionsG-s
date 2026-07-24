@@ -11,13 +11,12 @@ export default async function VerPage({
   const { data: { user } } = await supabase.auth.getUser()
 
   const [
-    membersRes, usersRes, membershipRes,
+    membersRes, usersRes,
     matchesRes, resultsRes, predsRes,
     matchTeamsRes,
   ] = await Promise.all([
     supabase.from('pool_members').select('*').eq('pool_id', poolId).eq('status', 'approved'),
     supabase.from('users').select('*'),
-    supabase.from('pool_members').select('*').eq('pool_id', poolId).eq('user_id', user!.id).single(),
     supabase.from('matches').select('*').order('match_number'),
     supabase.from('results').select('*').eq('pool_id', poolId),
     supabase.from('predictions').select('*').eq('pool_id', poolId),
@@ -30,7 +29,6 @@ export default async function VerPage({
   return (
     <LeagueVerPredictionsView
       currentUserId={user!.id}
-      currentMembership={membershipRes.data!}
       members={members}
       matches={matchesRes.data ?? []}
       results={resultsRes.data ?? []}

@@ -80,7 +80,6 @@ export function RankingTable({
             <tbody>
               {ranking.map((entry, i) => {
                 const isMe = entry.member.user_id === currentUserId
-                const isLocked = entry.member.locked_matches && entry.member.locked_spain && entry.member.locked_awards
                 return (
                   <tr key={entry.member.id} className={cn('border-b border-surface-2 text-sm', isMe && 'bg-gold/5')}>
                     <td className="py-2.5 pr-2 text-lg">
@@ -91,7 +90,6 @@ export function RankingTable({
                         {entry.member.username}
                         {entry.member.role === 'admin' && <span className="badge badge-admin">ADMIN</span>}
                         {isMe && <span className="text-muted text-xs">(tú)</span>}
-                        {isLocked && <span className="text-xs">🔒</span>}
                       </div>
                     </td>
                     <td className="py-2.5 text-right font-black text-xl text-gold">{entry.total}</td>
@@ -110,8 +108,8 @@ export function RankingTable({
             ['1pt', 'Signo acertado (1 / X / 2) en partido normal'],
             ['⭐ 3 / 1pts', 'Partido bonus: exacto / solo signo'],
             ['0pts', 'Fallo'],
-            ['Bloqueo', 'Apuesta cerrada tras la fecha límite'],
-            ['Ver', 'Puedes ver lo que han apostado los demás tras bloquear'],
+            ['Cierre', 'Cada jornada se cierra sola al llegar la fecha de su primer partido'],
+            ['Ver', 'Las apuestas de una jornada se revelan cuando cierra'],
           ].map(([pts, label]) => (
             <div key={label} className="flex gap-2 items-start">
               <span className="font-bold text-gold min-w-[60px] shrink-0">{pts}</span>
