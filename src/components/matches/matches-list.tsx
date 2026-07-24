@@ -3,12 +3,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { scoreMatch, signFromScores, SIGN_TO_CANONICAL_SCORE, type MatchSign } from '@/lib/scoring'
-import { JORNADAS } from '@/lib/data/matches'
+import { allJornadaLabels, jornadaLabelForMatch, isJornadaOpen as computeIsJornadaOpen, type OpenPhase } from '@/lib/jornada'
 import { Flag } from '@/components/ui/flag'
 import { cn } from '@/lib/utils'
 import type { Match, Result, Prediction, PoolMember, PoolMatchTeams } from '@/types'
-
-interface OpenPhase { phase: string; is_open: boolean }
 
 interface MatchesListProps {
   poolId: string
@@ -34,12 +32,8 @@ export function MatchesList({
   const [openPhases, setOpenPhases] = useState<OpenPhase[]>(initialOpenPhases)
   const [matchTeams, setMatchTeams] = useState<PoolMatchTeams[]>(initialMatchTeams)
   const [jornada, setJornada] = useState<string>('')
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
   const supabase = createClient()
 
-  const [localLocked, setLocalLocked] = useState(membership.locked_matches)
-  const isLocked = localLocked
   const isAdmin = membership.role === 'admin'
 
   useEffect(() => {
@@ -73,83 +67,16 @@ export function MatchesList({
     return () => { supabase.removeChannel(channel) }
   }, [supabase, poolId])
 
-  const getMatchRange = (matchList: Match[]): number => {
-    if (matchList.length === 0) return 10
-    const maxMatch = Math.max(...matchList.map(m => m.match_number))
-    const totalMatches = matchList.length
-    
-    if (maxMatch <= 8 && totalMatches <= 8) return 8
-    else if (maxMatch <= 16 && totalMatches <= 16) return 8
-    else if (maxMatch <= 24 && totalMatches <= 24) return 12
-    else if (maxMatch <= 32 && totalMatches <= 32) return 16
-    else return 10
-  }
-
-  const jornadaForMatch = (match: Match) => {
-    if (match.jornada) return `Jornada ${match.jornada}`
-    if (match.group_name?.trim()) return match.group_name.trim()
-    const range = getMatchRange(matches)
-    return `Jornada ${Math.max(1, Math.ceil(match.match_number / range))}`
-  }
-  
-  const jornadas = useMemo(() => {
-    // Primero intenta agrupar por jornada (campo de la BD)
-    const byJornada = Array.from(new Set(
-      matches
-        .filter(m => m.jornada !== null && m.jornada !== undefined)
-        .map(m => m.jornada!)
-    )).sort((a, b) => a - b)
-    
-    if (byJornada.length > 0) {
-      return byJornada.map(j => `Jornada ${j}`)
-    }
-    
-    // Fallback: intenta agrupar por group_name
-    const byGroupName = Array.from(new Set(
-      matches
-        .filter(m => m.group_name?.trim())
-        .map(m => m.group_name!.trim())
-    ))
-    
-    if (byGroupName.length > 0) {
-      return byGroupName
-    }
-    
-    // Si no hay jornada ni group_name, calcula por match_number
-    if (matches.length === 0) return ['Jornada 1']
-    
-    const range = getMatchRange(matches)
-    
-    const calculated = Array.from(new Set(
-      matches.map(m => `Jornada ${Math.max(1, Math.ceil(m.match_number / range))}`)
-    )).sort((a, b) => {
-      const numA = parseInt(a.split(' ')[1])
-      const numB = parseInt(b.split(' ')[1])
-      return numA - numB
-    })
-    
-    return calculated.length > 0 ? calculated : ['Jornada 1']
-  }, [matches])
-  const jornadaDeadline = (label: string) => {
-    const items = matches.filter(m => jornadaForMatch(m) === label)
-    return items.reduce((earliest, match) => {
-      const time = new Date(match.match_date || match.date || '').getTime()
-      return Number.isFinite(time) && time < earliest ? time : earliest
-    }, Number.POSITIVE_INFINITY)
-  }
-  const isJornadaOpen = (label: string) => {
-    const manual = openPhases.find(op => op.phase === label)?.is_open
-    if (manual !== undefined) return manual
-    const deadline = jornadaDeadline(label)
-    return Number.isFinite(deadline) ? Date.now() < deadline : true
-  }
+  const jornadaForMatch = (match: Match) => jornadaLabelForMatch(match, matches)
+  const jornadas = useMemo(() => allJornadaLabels(matches), [matches])
+  const isJornadaOpen = (label: string) => computeIsJornadaOpen(matches, label, openPhases)
   const getPred = (matchId: string) => predictions.find(p => p.match_id === matchId)
   const getResult = (matchId: string) => results.find(r => r.match_id === matchId)
   const getRealTeams = (matchId: string) => matchTeams.find(mt => mt.match_id === matchId)
 
   const handlePrediction = useCallback(async (matchId: string, side: 'home_score' | 'away_score', value: string) => {
     const match = matches.find(m => m.id === matchId)
-    if (!match || isLocked || !isJornadaOpen(jornadaForMatch(match))) return
+    if (!match || !isJornadaOpen(jornadaForMatch(match))) return
     try {
       const num = value === '' ? 0 : Math.min(30, Math.max(0, parseInt(value) || 0))
       const existing = predictions.find(p => p.match_id === matchId)
@@ -172,11 +99,11 @@ export function MatchesList({
       console.error('Error saving prediction:', err)
       alert('Error al guardar la predicción. Intenta de nuevo.')
     }
-  }, [isLocked, predictions, poolId, membership.user_id, supabase, matches])
+  }, [predictions, poolId, membership.user_id, supabase, matches])
 
   const handleSignPrediction = useCallback(async (matchId: string, sign: MatchSign) => {
     const match = matches.find(m => m.id === matchId)
-    if (!match || isLocked || !isJornadaOpen(jornadaForMatch(match))) return
+    if (!match || !isJornadaOpen(jornadaForMatch(match))) return
     try {
       const { home_score: homeScore, away_score: awayScore } = SIGN_TO_CANONICAL_SCORE[sign]
       const existing = predictions.find(p => p.match_id === matchId)
@@ -197,26 +124,7 @@ export function MatchesList({
       console.error('Error saving prediction:', err)
       alert('Error al guardar la predicción. Intenta de nuevo.')
     }
-  }, [isLocked, predictions, poolId, membership.user_id, supabase, matches])
-
-  const handleLock = async () => {
-    setSaving(true)
-    try {
-      await supabase
-        .from('pool_members')
-        .update({ locked_matches: true })
-        .eq('pool_id', poolId)
-        .eq('user_id', membership.user_id)
-      setLocalLocked(true)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
-    } catch (err) {
-      console.error('Error locking predictions:', err)
-      alert('Error al bloquear predicciones. Intenta de nuevo.')
-    } finally {
-      setSaving(false)
-    }
-  }
+  }, [predictions, poolId, membership.user_id, supabase, matches])
 
   const visibleMatches = jornada
     ? matches.filter(m => jornadaForMatch(m) === jornada)
@@ -280,25 +188,12 @@ export function MatchesList({
             realTeams={getRealTeams(m.id)}
             pred={getPred(m.id)}
             result={getResult(m.id)}
-            isLocked={isLocked || !currentOpen}
+            isLocked={!currentOpen}
             onPred={handlePrediction}
             onSignPred={handleSignPrediction}
           />
         ))}
       </div>
-
-      {!isLocked && (
-        <div className="fixed bottom-16 left-0 right-0 z-30 bg-surface-2 border-t border-gold px-4 py-3 shadow-2xl">
-          <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
-            <span className="text-sm font-semibold text-amber-200">
-              {currentOpen ? (saved ? '✓ Guardado' : '💡 Puedes bloquear tus apuestas cuando quieras') : '🔒 Jornada cerrada · Bloquea para poder ver apuestas ajenas'}
-            </span>
-            <button onClick={handleLock} disabled={saving} className="btn-primary text-sm disabled:opacity-50">
-              {saving ? 'Guardando...' : '🔒 Bloquear apuestas'}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

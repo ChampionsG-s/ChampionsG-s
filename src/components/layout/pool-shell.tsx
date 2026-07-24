@@ -27,7 +27,6 @@ export function PoolShell({ pool, membership, username, children }: PoolShellPro
   const router = useRouter()
   const [copied, setCopied] = useState(false)
 
-  const isLocked = membership.locked_matches && membership.locked_spain && membership.locked_awards
   const isAdmin = membership.role === 'admin'
 
   const handleLogout = async () => {
@@ -68,7 +67,6 @@ export function PoolShell({ pool, membership, username, children }: PoolShellPro
               <div className="flex items-center gap-1.5 justify-end">
                 <span className="font-bold text-xs">{username}</span>
                 {isAdmin && <span className="badge badge-admin">ADMIN</span>}
-                {isLocked && <span className="text-xs">🔒</span>}
               </div>
             </div>
             {isAdmin && (

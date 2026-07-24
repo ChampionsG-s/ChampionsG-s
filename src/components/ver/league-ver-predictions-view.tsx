@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { scoreMatch, signFromScores } from '@/lib/scoring'
+import { allJornadaLabels, jornadaLabelForMatch, isJornadaOpen } from '@/lib/jornada'
 import { cn } from '@/lib/utils'
 import { ChevronDown } from 'lucide-react'
 import { Flag } from '@/components/ui/flag'
@@ -9,7 +10,6 @@ import type { PoolMember, Match, Result, Prediction, PoolMatchTeams } from '@/ty
 
 interface LeagueVerPredictionsViewProps {
   currentUserId: string
-  currentMembership: PoolMember
   members: (PoolMember & { username: string })[]
   matches: Match[]
   results: Result[]
@@ -17,24 +17,23 @@ interface LeagueVerPredictionsViewProps {
   matchTeams: PoolMatchTeams[]
 }
 
-function jornadaLabel(match: Match) {
-  return match.group_name?.trim() || `Jornada ${Math.max(1, Math.ceil(match.match_number / 10))}`
-}
-
 export function LeagueVerPredictionsView({
   currentUserId,
-  currentMembership,
   members,
   matches,
   results,
   predictions,
   matchTeams,
 }: LeagueVerPredictionsViewProps) {
-  if (!currentMembership.locked_matches) {
+  // Las apuestas de una jornada solo se revelan a los demás una vez que ha
+  // pasado su fecha límite — la misma regla que cierra las predicciones.
+  const closedJornadas = allJornadaLabels(matches).filter(label => !isJornadaOpen(matches, label))
+
+  if (closedJornadas.length === 0) {
     return (
       <div className="card border-red-900">
-        <h2 className="font-black text-lg text-red-300 mb-2">🔒 Acceso bloqueado</h2>
-        <p className="text-sm text-muted">Para ver las apuestas de los demás necesitas bloquear tus propias apuestas.</p>
+        <h2 className="font-black text-lg text-red-300 mb-2">🔒 Aún no hay nada que ver</h2>
+        <p className="text-sm text-muted">Las apuestas de una jornada se revelan cuando llega su fecha límite.</p>
       </div>
     )
   }
@@ -45,7 +44,7 @@ export function LeagueVerPredictionsView({
     <div className="space-y-4">
       <div className="card">
         <h2 className="font-black text-lg tracking-wide text-gold mb-1">👁 Apuestas de la jornada</h2>
-        <p className="text-xs text-muted">Puedes revisar las predicciones de los demás una vez que bloqueas las tuyas.</p>
+        <p className="text-xs text-muted">Se muestran las jornadas cuya fecha límite ya ha pasado.</p>
       </div>
 
       {others.length === 0 ? (
@@ -61,6 +60,7 @@ export function LeagueVerPredictionsView({
             results={results}
             predictions={predictions.filter(prediction => prediction.user_id === member.user_id)}
             matchTeams={matchTeams}
+            visibleJornadas={closedJornadas}
           />
         ))
       )}
@@ -74,14 +74,16 @@ interface UserPredictionsCardProps {
   results: Result[]
   predictions: Prediction[]
   matchTeams: PoolMatchTeams[]
+  visibleJornadas: string[]
 }
 
-function UserPredictionsCard({ member, matches, results, predictions, matchTeams }: UserPredictionsCardProps) {
+function UserPredictionsCard({ member, matches, results, predictions, matchTeams, visibleJornadas }: UserPredictionsCardProps) {
   const [open, setOpen] = useState(false)
   const resultsMap = new Map(results.map(result => [result.match_id, result]))
   const matchTeamsMap = new Map(matchTeams.map(item => [item.match_id, item]))
+  const jornadaLabel = (match: Match) => jornadaLabelForMatch(match, matches)
 
-  const jornadas = Array.from(new Set(matches.map(jornadaLabel)))
+  const jornadas = visibleJornadas
 
   const total = predictions.reduce((sum, prediction) => {
     const match = matches.find(item => item.id === prediction.match_id)
@@ -129,6 +131,7 @@ function UserPredictionsCard({ member, matches, results, predictions, matchTeams
                     const displayHome = realTeams?.real_home || match.home_team || match.home || '?'
                     const displayAway = realTeams?.real_away || match.away_team || match.away || '?'
                     const ptsExactValue = match.pts_exact ?? 3
+                    const isFullHit = pts !== null && (match.is_bonus ? pts === ptsExactValue : pts > 0)
 
                     return (
                       <div key={match.id} className="bg-background border border-border rounded-lg px-2.5 py-2">
@@ -147,7 +150,7 @@ function UserPredictionsCard({ member, matches, results, predictions, matchTeams
                             {pts !== null && (
                               <span className={cn(
                                 'text-[10px] font-bold px-1.5 rounded-full',
-                                pts === ptsExactValue ? 'bg-green-900 text-green-300' : pts > 0 ? 'bg-amber-900 text-amber-300' : 'bg-red-900 text-red-300'
+                                isFullHit ? 'bg-green-900 text-green-300' : pts > 0 ? 'bg-amber-900 text-amber-300' : 'bg-red-900 text-red-300'
                               )}>
                                 {pts}pts
                               </span>

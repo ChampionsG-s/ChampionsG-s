@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Flag } from '@/components/ui/flag'
+import { allJornadaLabels, jornadaLabelForMatch, jornadaDeadline, isJornadaOpen as computeIsJornadaOpen } from '@/lib/jornada'
 import type { PoolMember, Match, Result } from '@/types'
 
 interface OpenPhase {
@@ -24,31 +25,8 @@ interface LeagueAdminPanelProps {
   currentUserId: string
 }
 
-function getMatchRange(matchList: Match[]): number {
-  if (matchList.length === 0) return 10
-  const maxMatch = Math.max(...matchList.map(m => m.match_number))
-  const totalMatches = matchList.length
-  
-  if (maxMatch <= 8 && totalMatches <= 8) return 8
-  else if (maxMatch <= 16 && totalMatches <= 16) return 8
-  else if (maxMatch <= 24 && totalMatches <= 24) return 12
-  else if (maxMatch <= 32 && totalMatches <= 32) return 16
-  else return 10
-}
-
 function jornadaLabel(match: Match, matches: Match[]) {
-  if (match.jornada) return `Jornada ${match.jornada}`
-  if (match.group_name?.trim()) return match.group_name.trim()
-  const range = getMatchRange(matches)
-  return `Jornada ${Math.max(1, Math.ceil(match.match_number / range))}`
-}
-
-function jornadaDeadline(matches: Match[], label: string) {
-  const items = matches.filter(match => jornadaLabel(match, matches) === label)
-  return items.reduce((earliest, match) => {
-    const time = new Date(match.match_date || match.date || '').getTime()
-    return Number.isFinite(time) && time < earliest ? time : earliest
-  }, Number.POSITIVE_INFINITY)
+  return jornadaLabelForMatch(match, matches)
 }
 
 export function LeagueAdminPanel({
@@ -67,49 +45,12 @@ export function LeagueAdminPanel({
   const [results, setResults] = useState(initialResults)
   const [loading, setLoading] = useState<string | null>(null)
 
-  const jornadas = useMemo(() => {
-    // Primero intenta agrupar por jornada (campo de la BD)
-    const byJornada = Array.from(new Set(
-      matches
-        .filter(m => m.jornada !== null && m.jornada !== undefined)
-        .map(m => m.jornada!)
-    )).sort((a, b) => a - b)
-    
-    if (byJornada.length > 0) {
-      return byJornada.map(j => `Jornada ${j}`)
-    }
-    
-    // Fallback: intenta agrupar por group_name
-    const byGroupName = Array.from(new Set(
-      matches
-        .filter(m => m.group_name?.trim())
-        .map(m => m.group_name!.trim())
-    ))
-    
-    if (byGroupName.length > 0) {
-      return byGroupName
-    }
-    
-    // Si no hay group_name, calcula por match_number
-    if (matches.length === 0) return ['Jornada 1']
-    
-    const range = getMatchRange(matches)
-    
-    const calculated = Array.from(new Set(
-      matches.map(m => `Jornada ${Math.max(1, Math.ceil(m.match_number / range))}`)
-    )).sort((a, b) => {
-      const numA = parseInt(a.split(' ')[1])
-      const numB = parseInt(b.split(' ')[1])
-      return numA - numB
-    })
-    
-    return calculated.length > 0 ? calculated : ['Jornada 1']
-  }, [matches])
+  const jornadas = useMemo(() => allJornadaLabels(matches), [matches])
 
   const pending = members.filter(member => member.status === 'pending')
   const approved = members.filter(member => member.status === 'approved')
 
-  const isJornadaOpen = (label: string) => openPhases.find(open => open.phase === label)?.is_open ?? (Date.now() < jornadaDeadline(matches, label))
+  const isJornadaOpen = (label: string) => computeIsJornadaOpen(matches, label, openPhases)
 
   const handleApprove = async (memberId: string) => {
     setLoading(memberId)
@@ -133,20 +74,6 @@ export function LeagueAdminPanel({
     } catch (err) {
       console.error('Error rejecting member:', err)
       alert('Error al rechazar el usuario. Intenta de nuevo.')
-    } finally {
-      setLoading(null)
-    }
-  }
-
-  const handleToggleLock = async (memberId: string, currentLocked: boolean) => {
-    setLoading(memberId)
-    try {
-      const updated = { locked_matches: !currentLocked }
-      await supabase.from('pool_members').update(updated).eq('id', memberId)
-      setMembers(prev => prev.map(member => member.id === memberId ? { ...member, ...updated } : member))
-    } catch (err) {
-      console.error('Error toggling lock:', err)
-      alert('Error al cambiar el bloqueo. Intenta de nuevo.')
     } finally {
       setLoading(null)
     }
@@ -278,7 +205,6 @@ export function LeagueAdminPanel({
             <h2 className="font-bold text-sm uppercase tracking-wide mb-3">👥 Miembros de la quiniela</h2>
             <div className="space-y-2">
               {approved.map(member => {
-                const isLocked = member.locked_matches
                 const isMe = member.user_id === currentUserId
                 return (
                   <div key={member.id} className="flex items-center gap-3 bg-surface-2 rounded-lg px-3 py-2.5">
@@ -288,18 +214,7 @@ export function LeagueAdminPanel({
                         {member.role === 'admin' && <span className="badge badge-admin">ADMIN</span>}
                         {isMe && <span className="text-xs text-muted">(tú)</span>}
                       </div>
-                      <p className="text-xs text-muted">{isLocked ? '🔒 Bloqueado' : '🔓 Sin bloquear'}</p>
                     </div>
-                    <button
-                      onClick={() => handleToggleLock(member.id, isLocked)}
-                      disabled={loading === member.id}
-                      className={cn(
-                        'text-xs font-bold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50',
-                        isLocked ? 'bg-blue-900 text-blue-300 hover:bg-blue-700' : 'bg-amber-900 text-amber-300 hover:bg-amber-700'
-                      )}
-                    >
-                      {isLocked ? '🔓 Desbloquear' : '🔒 Bloquear'}
-                    </button>
                   </div>
                 )
               })}
