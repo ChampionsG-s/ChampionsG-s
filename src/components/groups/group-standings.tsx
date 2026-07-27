@@ -89,14 +89,14 @@ export function GroupStandings({ poolId, matches, results: initialResults }: Gro
   return (
     <div className="space-y-4">
       <div className="card mb-2">
-        <h2 className="font-black text-lg tracking-wide text-gold mb-1">📊 Clasificación</h2>
+        <h2 className="font-display text-2xl tracking-wide text-gold mb-1">📊 Clasificación</h2>
         <p className="text-xs text-muted">
           Tabla de liga actualizada automáticamente con cada resultado
         </p>
       </div>
 
-      <div className="bg-surface border border-border rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-surface border border-border rounded-2xl overflow-x-auto shadow-lg shadow-black/20">
+        <table className="w-full text-sm min-w-[360px]">
           <thead>
             <tr className="text-[10px] text-muted uppercase tracking-wide border-b border-border">
               <th className="text-left pl-3 py-1.5 w-1/2">Equipo</th>
@@ -114,7 +114,7 @@ export function GroupStandings({ poolId, matches, results: initialResults }: Gro
             {standings.map((row, i) => {
               const pos = i + 1
               return (
-                <tr key={row.team} className={cn('border-b border-surface-2 last:border-0')}>
+                <tr key={row.team} className={cn('border-b border-surface-2 last:border-0', pos <= 3 && 'bg-gold/[0.03]')}>
                   <td className="pl-3 py-2">
                     <div className="flex items-center gap-2">
                       <span className={cn(

@@ -241,7 +241,7 @@ export function AdminPanel({
                   <div key={m.id} className="flex items-center gap-3 bg-surface-2 rounded-lg px-3 py-2.5">
                     <div className="flex-1">
                       <p className="font-bold text-sm">{m.username}</p>
-                      <p className="text-xs text-muted">{new Date(m.joined_at).toLocaleString('es')}</p>
+                      <p className="text-xs text-muted">{new Date(m.created_at).toLocaleString('es')}</p>
                     </div>
                     <button
                       onClick={() => handleApprove(m.id)}

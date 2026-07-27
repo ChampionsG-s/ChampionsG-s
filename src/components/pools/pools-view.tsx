@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
-import { Plus, Users, LogOut, Globe } from 'lucide-react'
+import { Plus, Users, LogOut, Globe, ChevronRight } from 'lucide-react'
 
 interface MembershipWithPool {
   id: string
@@ -87,32 +87,32 @@ export function PoolsView({ memberships: initial, userId, isPlatformAdmin }: Poo
   }
 
   return (
-    <div className="min-h-screen max-w-2xl mx-auto px-4 py-8">
+    <div className="min-h-screen max-w-2xl mx-auto px-4 py-8 safe-top safe-bottom">
       <div className="flex justify-between items-center mb-2">
         {isPlatformAdmin ? (
           <button
             onClick={() => router.push('/admin-global')}
-            className="flex items-center gap-1.5 text-xs text-red-300 hover:text-red-200 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-900/20 border border-red-900/50"
+            className="flex items-center gap-1.5 text-xs text-red-300 hover:text-red-200 transition-colors px-3 py-2 rounded-lg hover:bg-red-900/20 border border-red-900/50"
           >
             <Globe size={14} /> Resultados Globales
           </button>
         ) : <div />}
         <button
           onClick={handleLogout}
-          className="flex items-center gap-1.5 text-xs text-muted hover:text-cream transition-colors px-3 py-1.5 rounded-lg hover:bg-surface"
+          className="flex items-center gap-1.5 text-xs text-muted hover:text-cream transition-colors px-3 py-2 rounded-lg hover:bg-surface"
         >
           <LogOut size={14} /> Cerrar sesión
         </button>
       </div>
 
-      <div className="text-center mb-8">
-        <p className="text-xs tracking-widest text-gold font-bold uppercase mb-2">
+      <div className="text-center mb-8 mt-2">
+        <p className="text-xs tracking-[0.3em] text-gold font-bold uppercase mb-2">
           Champions G's
         </p>
-        <h1 className="text-5xl font-black tracking-wider text-cream">
+        <h1 className="font-display text-6xl tracking-wider text-cream leading-none">
           TIP<span className="text-gold">STR</span>
         </h1>
-        <p className="text-muted text-sm mt-2">Tus quinielas</p>
+        <p className="text-muted text-sm mt-3">Tus quinielas</p>
       </div>
 
       {mode === 'list' && (
@@ -141,21 +141,24 @@ export function PoolsView({ memberships: initial, userId, isPlatformAdmin }: Poo
               <p className="text-muted text-sm mt-1">Crea una o únete con un código de invitación.</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {approved.map(m => (
                 <button
                   key={m.id}
                   onClick={() => router.push(`/p/${m.pools.id}/jornadas`)}
-                  className="card w-full text-left hover:border-gold transition-colors flex items-center justify-between"
+                  className="card w-full text-left hover:border-gold active:scale-[0.99] transition-all flex items-center gap-3"
                 >
-                  <div>
-                    <p className="font-bold">{m.pools.name}</p>
-                    <p className="text-xs text-muted mt-0.5">
-                      {m.role === 'admin' && <span className="badge badge-admin mr-1.5">ADMIN</span>}
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-gold-2/20 to-gold/5 border border-gold/20 flex items-center justify-center flex-shrink-0">
+                    <span className="font-display text-xl text-gold">{m.pools.name.charAt(0).toUpperCase()}</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold truncate">{m.pools.name}</p>
+                    <p className="text-xs text-muted mt-0.5 flex items-center gap-1.5">
+                      {m.role === 'admin' && <span className="badge badge-admin">ADMIN</span>}
                       Código: {m.pools.invite_code}
                     </p>
                   </div>
-                  <span className="text-gold">→</span>
+                  <ChevronRight size={18} className="text-muted flex-shrink-0" />
                 </button>
               ))}
             </div>

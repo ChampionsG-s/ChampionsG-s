@@ -25,7 +25,7 @@ export default async function AdminPage({
   }
 
   const [membersRes, usersRes, openPhasesRes, matchesRes, resultsRes] = await Promise.all([
-    supabase.from('pool_members').select('*').eq('pool_id', poolId).order('joined_at'),
+    supabase.from('pool_members').select('*').eq('pool_id', poolId).order('created_at'),
     supabase.from('users').select('*'),
     supabase.from('pool_open_phases').select('*').eq('pool_id', poolId),
     supabase.from('matches').select('*').order('match_number'),

@@ -63,47 +63,53 @@ export function RankingTable({
 
   return (
     <div className="space-y-4">
-      <div className="card">
-        <h2 className="font-black text-lg tracking-wide text-gold mb-4">🏆 RANKING</h2>
+      <div className="card !p-0 overflow-hidden">
+        <h2 className="font-display text-2xl tracking-wide text-gold px-4 pt-4 pb-3">🏆 RANKING</h2>
 
         {ranking.length === 0 ? (
-          <p className="text-muted text-sm">Sin jugadores aún.</p>
+          <p className="text-muted text-sm px-4 pb-4">Sin jugadores aún.</p>
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border text-xs text-muted uppercase tracking-wide">
-                <th className="text-left pb-2">#</th>
-                <th className="text-left pb-2">Jugador</th>
-                <th className="text-right pb-2">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ranking.map((entry, i) => {
-                const isMe = entry.member.user_id === currentUserId
-                return (
-                  <tr key={entry.member.id} className={cn('border-b border-surface-2 text-sm', isMe && 'bg-gold/5')}>
-                    <td className="py-2.5 pr-2 text-lg">
-                      {medals[i] ?? <span className="text-muted font-bold">{i + 1}</span>}
-                    </td>
-                    <td className="py-2.5">
-                      <div className="font-bold flex items-center gap-1.5 flex-wrap">
-                        {entry.member.username}
-                        {entry.member.role === 'admin' && <span className="badge badge-admin">ADMIN</span>}
-                        {isMe && <span className="text-muted text-xs">(tú)</span>}
-                      </div>
-                    </td>
-                    <td className="py-2.5 text-right font-black text-xl text-gold">{entry.total}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+          <div className="divide-y divide-border/60">
+            {ranking.map((entry, i) => {
+              const isMe = entry.member.user_id === currentUserId
+              const top3 = i < 3
+              return (
+                <div
+                  key={entry.member.id}
+                  className={cn(
+                    'flex items-center gap-3 px-4 py-3 transition-colors',
+                    isMe && 'bg-gold/[0.06]',
+                    top3 && 'bg-gradient-to-r from-gold/[0.04] to-transparent'
+                  )}
+                >
+                  <div className="w-7 text-center flex-shrink-0">
+                    {medals[i]
+                      ? <span className="text-lg leading-none">{medals[i]}</span>
+                      : <span className="text-muted font-bold text-sm">{i + 1}</span>}
+                  </div>
+                  <div className="w-9 h-9 rounded-full bg-surface-2 border border-border flex items-center justify-center flex-shrink-0">
+                    <span className="font-display text-base text-gold leading-none">
+                      {entry.member.username.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-sm flex items-center gap-1.5 flex-wrap truncate">
+                      {entry.member.username}
+                      {entry.member.role === 'admin' && <span className="badge badge-admin">ADMIN</span>}
+                      {isMe && <span className="text-muted text-xs font-normal">(tú)</span>}
+                    </div>
+                  </div>
+                  <div className="font-display text-2xl text-gold flex-shrink-0">{entry.total}</div>
+                </div>
+              )
+            })}
+          </div>
         )}
       </div>
 
       <div className="card">
         <h3 className="font-bold text-sm text-gold mb-3">Sistema de puntos</h3>
-        <div className="grid grid-cols-2 gap-2 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
           {[
             ['1pt', 'Signo acertado (1 / X / 2) en partido normal'],
             ['⭐ 3 / 1pts', 'Partido bonus: exacto / solo signo'],
@@ -111,8 +117,8 @@ export function RankingTable({
             ['Cierre', 'Cada jornada se cierra sola al llegar la fecha de su primer partido'],
             ['Ver', 'Las apuestas de una jornada se revelan cuando cierra'],
           ].map(([pts, label]) => (
-            <div key={label} className="flex gap-2 items-start">
-              <span className="font-bold text-gold min-w-[60px] shrink-0">{pts}</span>
+            <div key={label} className="flex gap-2.5 items-start">
+              <span className="font-bold text-gold min-w-[64px] shrink-0">{pts}</span>
               <span className="text-muted">{label}</span>
             </div>
           ))}
