@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/avatar'
@@ -90,41 +92,62 @@ export function PoolsView({ memberships: initial, userId, isPlatformAdmin, usern
   }
 
   return (
-    <div className="min-h-screen max-w-2xl mx-auto px-4 py-8 safe-top safe-bottom">
-      <div className="flex justify-between items-center mb-2">
-        {isPlatformAdmin ? (
-          <button
-            onClick={() => router.push('/admin-global')}
-            className="flex items-center gap-1.5 text-xs text-red-300 hover:text-red-200 transition-colors px-3 py-2 rounded-lg hover:bg-red-900/20 border border-red-900/50"
-          >
-            <Globe size={14} /> Resultados Globales
-          </button>
-        ) : <div />}
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-1.5 text-xs text-muted hover:text-cream transition-colors px-3 py-2 rounded-lg hover:bg-surface"
-        >
-          <LogOut size={14} /> Cerrar sesión
-        </button>
-      </div>
+    <div className="min-h-screen flex flex-col max-w-2xl mx-auto safe-top safe-bottom">
+      {/* Header: logo + todo lo relacionado con el usuario */}
+      <header className="sticky top-0 z-40 bg-background/85 backdrop-blur-md border-b border-border px-4 py-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-9 h-9 rounded-lg bg-white p-1 flex-shrink-0">
+              <Image
+                src="/logo.jpg"
+                alt="Champions G's"
+                width={36}
+                height={36}
+                className="w-full h-full object-contain rounded-md"
+              />
+            </div>
+            <span className="font-display text-lg tracking-wide truncate">Champions G's</span>
+          </div>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {isPlatformAdmin && (
+              <button
+                onClick={() => router.push('/admin-global')}
+                className="p-2.5 rounded-lg text-red-300 hover:text-red-200 hover:bg-red-900/20 transition-colors"
+                title="Resultados Globales"
+              >
+                <Globe size={18} />
+              </button>
+            )}
+            <Link
+              href="/perfil"
+              className="flex items-center gap-1.5 p-1 rounded-lg hover:bg-surface transition-colors"
+            >
+              <Avatar username={username} avatarUrl={avatarUrl} size="sm" />
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="p-2.5 rounded-lg text-muted hover:text-cream hover:bg-surface transition-colors"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
+        </div>
+      </header>
 
-      <button
-        onClick={() => router.push('/perfil')}
-        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-surface transition-colors"
-      >
-        <Avatar username={username} avatarUrl={avatarUrl} size="sm" />
-        <span className="text-sm font-semibold">{username}</span>
-        <ChevronRight size={16} className="text-muted ml-auto" />
-      </button>
-
+      <main className="flex-1 px-4 py-6">
       <div className="text-center mb-8 mt-2">
-        <p className="text-xs tracking-[0.3em] text-gold font-bold uppercase mb-2">
-          Champions G's
-        </p>
-        <h1 className="font-display text-6xl tracking-wider text-cream leading-none">
-          TIP<span className="text-gold">STR</span>
-        </h1>
-        <p className="text-muted text-sm mt-3">Tus quinielas</p>
+        <div className="mx-auto mb-4 w-28 h-28 rounded-2xl bg-white p-2 shadow-lg shadow-black/30 ring-1 ring-gold/30">
+          <Image
+            src="/logo.jpg"
+            alt="Champions G's"
+            width={112}
+            height={112}
+            className="w-full h-full object-contain rounded-xl"
+            priority
+          />
+        </div>
+        <h1 className="font-display text-2xl tracking-wide text-cream mt-3">Champions G's</h1>
+        <p className="text-muted text-sm mt-1">Tus quinielas</p>
       </div>
 
       {mode === 'list' && (
@@ -228,6 +251,7 @@ export function PoolsView({ memberships: initial, userId, isPlatformAdmin, usern
           </div>
         </div>
       )}
+      </main>
     </div>
   )
 }
