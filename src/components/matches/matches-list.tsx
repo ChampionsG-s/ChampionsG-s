@@ -39,7 +39,7 @@ export function MatchesList({
   useEffect(() => {
     const channel = supabase
       .channel(`matches-${poolId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'results', filter: `pool_id=eq.${poolId}` },
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'results' },
         (payload) => {
           setResults(prev => {
             const filtered = prev.filter(r => r.id !== (payload.new as Result)?.id)

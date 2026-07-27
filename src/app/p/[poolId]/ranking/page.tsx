@@ -14,7 +14,7 @@ export default async function RankingPage({
     supabase.from('pool_members').select('*').eq('pool_id', poolId).eq('status', 'approved'),
     supabase.from('users').select('*'),
     supabase.from('predictions').select('*').eq('pool_id', poolId),
-    supabase.from('results').select('*').eq('pool_id', poolId),
+    supabase.from('results').select('*'),
     supabase.from('matches').select('*'),
   ])
 
