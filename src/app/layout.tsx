@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Bebas_Neue } from 'next/font/google'
+import { Inter, Bebas_Neue, Playfair_Display } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers'
 
@@ -12,6 +12,12 @@ const bebas = Bebas_Neue({
   subsets: ['latin'],
   weight: '400',
   variable: '--font-bebas',
+})
+
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-playfair',
+  weight: ['700', '800', '900'],
 })
 
 export const metadata: Metadata = {
@@ -34,7 +40,11 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
+<<<<<<< HEAD
     <html lang="es" className={`${inter.variable} ${bebas.variable}`}>
+=======
+    <html lang="es" className={`${inter.variable} ${playfair.variable}`}>
+>>>>>>> cambiosversion1.0
       <body className="bg-background text-cream antialiased">
         <Providers>{children}</Providers>
       </body>
