@@ -3,10 +3,10 @@
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { RankingTable } from './ranking-table'
-import { VerApuestasView } from '@/components/ver/ver-apuestas-view'
+import { RankingJornadaView } from './ranking-jornada-view'
 import type { PoolMember, Prediction, Result, Match } from '@/types'
 
-type Tab = 'ranking' | 'ver'
+type Tab = 'total' | 'jornada'
 
 interface RankingViewProps {
   poolId: string
@@ -18,14 +18,14 @@ interface RankingViewProps {
 }
 
 export function RankingView({ poolId, members, predictions, results, matches, currentUserId }: RankingViewProps) {
-  const [tab, setTab] = useState<Tab>('ranking')
+  const [tab, setTab] = useState<Tab>('total')
 
   return (
     <div className="space-y-4">
       <div className="flex gap-1.5">
         {([
-          ['ranking', '🏆 Ranking'],
-          ['ver', '👁 Ver apuestas'],
+          ['total', '🏆 Total'],
+          ['jornada', '📅 Por jornada'],
         ] as [Tab, string][]).map(([key, label]) => (
           <button
             key={key}
@@ -40,7 +40,7 @@ export function RankingView({ poolId, members, predictions, results, matches, cu
         ))}
       </div>
 
-      {tab === 'ranking' ? (
+      {tab === 'total' ? (
         <RankingTable
           poolId={poolId}
           members={members}
@@ -50,7 +50,7 @@ export function RankingView({ poolId, members, predictions, results, matches, cu
           currentUserId={currentUserId}
         />
       ) : (
-        <VerApuestasView
+        <RankingJornadaView
           members={members}
           matches={matches}
           results={results}

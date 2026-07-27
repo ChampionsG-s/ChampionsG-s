@@ -9,14 +9,16 @@ import { Flag } from '@/components/ui/flag'
 import { ChevronDown } from 'lucide-react'
 import type { PoolMember, Match, Result, Prediction } from '@/types'
 
-interface VerApuestasViewProps {
+interface RankingJornadaViewProps {
   members: (PoolMember & { username: string; avatar_url?: string | null })[]
   matches: Match[]
   results: Result[]
   predictions: Prediction[]
 }
 
-export function VerApuestasView({ members, matches, results, predictions }: VerApuestasViewProps) {
+const medals = ['🥇', '🥈', '🥉']
+
+export function RankingJornadaView({ members, matches, results, predictions }: RankingJornadaViewProps) {
   const jornadas = useMemo(() => allJornadaLabels(matches), [matches])
   const [selected, setSelected] = useState(jornadas[0] ?? '')
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -31,6 +33,22 @@ export function VerApuestasView({ members, matches, results, predictions }: VerA
     () => matches.filter(m => jornadaLabelForMatch(m, matches) === currentJornada),
     [matches, currentJornada]
   )
+
+  const ranking = useMemo(() => {
+    return members
+      .map(member => {
+        const memberPreds = predictions.filter(
+          p => p.user_id === member.user_id && jornadaMatches.some(m => m.id === p.match_id)
+        )
+        const total = memberPreds.reduce((sum, p) => {
+          const match = jornadaMatches.find(m => m.id === p.match_id)
+          const result = resultsMap.get(p.match_id)
+          return sum + (match && result ? scoreMatch(p, result, match) : 0)
+        }, 0)
+        return { member, total }
+      })
+      .sort((a, b) => b.total - a.total)
+  }, [members, predictions, jornadaMatches, resultsMap])
 
   return (
     <div className="space-y-4">
@@ -69,15 +87,7 @@ export function VerApuestasView({ members, matches, results, predictions }: VerA
         </div>
       ) : (
         <div className="space-y-2.5">
-          {members.map(member => {
-            const memberPreds = predictions.filter(
-              p => p.user_id === member.user_id && jornadaMatches.some(m => m.id === p.match_id)
-            )
-            const total = memberPreds.reduce((sum, p) => {
-              const match = jornadaMatches.find(m => m.id === p.match_id)
-              const result = resultsMap.get(p.match_id)
-              return sum + (match && result ? scoreMatch(p, result, match) : 0)
-            }, 0)
+          {ranking.map(({ member, total }, i) => {
             const isExpanded = expandedId === member.id
 
             return (
@@ -86,6 +96,9 @@ export function VerApuestasView({ members, matches, results, predictions }: VerA
                   onClick={() => setExpandedId(isExpanded ? null : member.id)}
                   className="w-full flex items-center gap-3 px-4 py-3"
                 >
+                  <span className="w-5 text-center flex-shrink-0">
+                    {medals[i] ? <span className="text-base leading-none">{medals[i]}</span> : <span className="text-muted font-bold text-xs">{i + 1}</span>}
+                  </span>
                   <Avatar username={member.username} avatarUrl={member.avatar_url} size="md" />
                   <span className="font-bold text-sm flex-1 text-left flex items-center gap-1.5 flex-wrap">
                     {member.username}
