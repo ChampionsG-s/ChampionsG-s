@@ -4,11 +4,12 @@ import { useMemo, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { calculateBreakdown } from '@/lib/scoring'
 import { cn } from '@/lib/utils'
+import { Avatar } from '@/components/ui/avatar'
 import type { PoolMember, Prediction, Result, Match } from '@/types'
 
 interface RankingTableProps {
   poolId: string
-  members: (PoolMember & { username: string })[]
+  members: (PoolMember & { username: string; avatar_url?: string | null })[]
   predictions: Prediction[]
   results: Result[]
   matches: Match[]
@@ -87,11 +88,7 @@ export function RankingTable({
                       ? <span className="text-lg leading-none">{medals[i]}</span>
                       : <span className="text-muted font-bold text-sm">{i + 1}</span>}
                   </div>
-                  <div className="w-9 h-9 rounded-full bg-surface-2 border border-border flex items-center justify-center flex-shrink-0">
-                    <span className="font-display text-base text-gold leading-none">
-                      {entry.member.username.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
+                  <Avatar username={entry.member.username} avatarUrl={entry.member.avatar_url} size="md" />
                   <div className="min-w-0 flex-1">
                     <div className="font-bold text-sm flex items-center gap-1.5 flex-wrap truncate">
                       {entry.member.username}

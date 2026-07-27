@@ -18,10 +18,11 @@ export default async function RankingPage({
     supabase.from('matches').select('*'),
   ])
 
-  const usersMap = new Map((usersRes.data ?? []).map(u => [u.id, u.username]))
+  const usersMap = new Map((usersRes.data ?? []).map(u => [u.id, u]))
   const members = (membersRes.data ?? []).map(m => ({
     ...m,
-    username: usersMap.get(m.user_id) ?? 'Desconocido',
+    username: usersMap.get(m.user_id)?.username ?? 'Desconocido',
+    avatar_url: usersMap.get(m.user_id)?.avatar_url ?? null,
   }))
 
   return (

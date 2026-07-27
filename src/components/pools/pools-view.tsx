@@ -119,23 +119,17 @@ export function PoolsView({ memberships: initial, userId, isPlatformAdmin, usern
       </button>
 
       <div className="text-center mb-8 mt-2">
-        <div className="mx-auto mb-3 w-24 h-24 rounded-2xl bg-white p-1.5 shadow-lg shadow-black/30 ring-1 ring-gold/30">
+        <div className="mx-auto mb-4 w-28 h-28 rounded-2xl bg-white p-2 shadow-lg shadow-black/30 ring-1 ring-gold/30">
           <Image
             src="/logo.jpg"
             alt="Champions G's"
-            width={96}
-            height={96}
+            width={112}
+            height={112}
             className="w-full h-full object-contain rounded-xl"
             priority
           />
         </div>
-        <p className="text-xs tracking-[0.3em] text-gold font-bold uppercase mb-2">
-          Champions G's
-        </p>
-        <h1 className="font-display text-6xl tracking-wider text-cream leading-none">
-          TIP<span className="text-gold">STR</span>
-        </h1>
-        <p className="text-muted text-sm mt-3">Tus quinielas</p>
+        <p className="text-muted text-sm mt-1">Tus quinielas</p>
       </div>
 
       {mode === 'list' && (
