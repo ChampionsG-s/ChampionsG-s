@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { Avatar } from '@/components/ui/avatar'
 import { Plus, Users, LogOut, Globe, ChevronRight } from 'lucide-react'
 
 interface MembershipWithPool {
@@ -21,9 +22,11 @@ interface PoolsViewProps {
   memberships: MembershipWithPool[]
   userId: string
   isPlatformAdmin: boolean
+  username: string
+  avatarUrl?: string | null
 }
 
-export function PoolsView({ memberships: initial, userId, isPlatformAdmin }: PoolsViewProps) {
+export function PoolsView({ memberships: initial, userId, isPlatformAdmin, username, avatarUrl }: PoolsViewProps) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -104,6 +107,15 @@ export function PoolsView({ memberships: initial, userId, isPlatformAdmin }: Poo
           <LogOut size={14} /> Cerrar sesión
         </button>
       </div>
+
+      <button
+        onClick={() => router.push('/perfil')}
+        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-surface transition-colors"
+      >
+        <Avatar username={username} avatarUrl={avatarUrl} size="sm" />
+        <span className="text-sm font-semibold">{username}</span>
+        <ChevronRight size={16} className="text-muted ml-auto" />
+      </button>
 
       <div className="text-center mb-8 mt-2">
         <p className="text-xs tracking-[0.3em] text-gold font-bold uppercase mb-2">

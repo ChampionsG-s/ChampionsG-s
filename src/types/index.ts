@@ -15,6 +15,7 @@ export interface AppUser {
   id: string
   username: string
   created_at: string
+  avatar_url?: string | null
 }
 
 export interface Pool {
