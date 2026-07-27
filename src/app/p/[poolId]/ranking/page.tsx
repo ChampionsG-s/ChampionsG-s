@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { RankingTable } from '@/components/ranking/ranking-table'
+import { RankingView } from '@/components/ranking/ranking-view'
 
 export default async function RankingPage({
   params,
@@ -14,7 +14,7 @@ export default async function RankingPage({
     supabase.from('pool_members').select('*').eq('pool_id', poolId).eq('status', 'approved'),
     supabase.from('users').select('*'),
     supabase.from('predictions').select('*').eq('pool_id', poolId),
-    supabase.from('results').select('*').eq('pool_id', poolId),
+    supabase.from('results').select('*'),
     supabase.from('matches').select('*'),
   ])
 
@@ -26,7 +26,7 @@ export default async function RankingPage({
   }))
 
   return (
-    <RankingTable
+    <RankingView
       poolId={poolId}
       members={members}
       predictions={predsRes.data ?? []}

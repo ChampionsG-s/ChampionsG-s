@@ -70,7 +70,7 @@ export function GroupStandings({ poolId, matches, results: initialResults }: Gro
   useEffect(() => {
     const channel = supabase
       .channel(`grupos-${poolId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'results', filter: `pool_id=eq.${poolId}` },
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'results' },
         (payload) => {
           setResults(prev => {
             const filtered = prev.filter(r => r.id !== (payload.new as Result)?.id)

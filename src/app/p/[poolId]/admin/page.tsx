@@ -29,7 +29,7 @@ export default async function AdminPage({
     supabase.from('users').select('*'),
     supabase.from('pool_open_phases').select('*').eq('pool_id', poolId),
     supabase.from('matches').select('*').order('match_number'),
-    supabase.from('results').select('*').eq('pool_id', poolId),
+    supabase.from('results').select('*'),
   ])
 
   // Join members with usernames
