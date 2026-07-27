@@ -156,10 +156,12 @@ export function MatchesList({
           {jornadas.map((label) => {
             const open = isJornadaOpen(label)
             const active = currentJornada === label
+            const shortLabel = label.match(/^Jornada (\d+)$/)?.[1] ?? label
             return (
               <button
                 key={label}
                 onClick={() => setJornada(label)}
+                title={label}
                 className={cn(
                   'snap-start flex-shrink-0 px-3.5 py-2 rounded-full text-xs font-bold transition-all',
                   active
@@ -169,7 +171,7 @@ export function MatchesList({
                       : 'border border-border text-border cursor-not-allowed opacity-50'
                 )}
               >
-                {label} {!open && '🔒'}
+                {shortLabel} {!open && '🔒'}
               </button>
             )
           })}

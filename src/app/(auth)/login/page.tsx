@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
@@ -91,17 +90,13 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4">
       <div className="text-center mb-8">
-        <div className="mx-auto mb-4 w-28 h-28 rounded-2xl bg-white p-2 shadow-lg shadow-black/30 ring-1 ring-gold/30">
-          <Image
-            src="/logo.jpg"
-            alt="Champions G's"
-            width={112}
-            height={112}
-            className="w-full h-full object-contain rounded-xl"
-            priority
-          />
-        </div>
-        <p className="text-muted text-sm mt-1">Crea o únete a tu quiniela de Liga</p>
+        <p className="text-xs tracking-widest text-gold font-bold uppercase mb-2">
+          Champions G's
+        </p>
+        <h1 className="text-6xl font-black tracking-wider text-cream">
+          TIP<span className="text-gold">STR</span>
+        </h1>
+        <p className="text-muted text-sm mt-2">Crea o únete a tu quiniela de Liga</p>
       </div>
 
       <div className="w-full max-w-sm">
