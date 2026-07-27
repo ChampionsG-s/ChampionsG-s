@@ -61,15 +61,14 @@ export default async function PoolLayout({
     )
   }
 
-  // Get username
   const { data: appUser } = await supabase
     .from('users')
-    .select('username')
+    .select('username, avatar_url')
     .eq('id', user.id)
     .single()
 
   return (
-    <PoolShell pool={pool} membership={membership} username={appUser?.username ?? ''}>
+    <PoolShell pool={pool} membership={membership} username={appUser?.username ?? ''} avatarUrl={appUser?.avatar_url}>
       {children}
     </PoolShell>
   )

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { Avatar } from '@/components/ui/avatar'
 import { Trophy, CalendarDays, Table2, Settings, LogOut, ArrowLeft, Copy, Check } from 'lucide-react'
 import { useState } from 'react'
 import type { Pool, PoolMember } from '@/types'
@@ -12,6 +13,7 @@ interface PoolShellProps {
   pool: Pool
   membership: PoolMember
   username: string
+  avatarUrl?: string | null
   children: React.ReactNode
 }
 
@@ -22,7 +24,7 @@ const navItems = (poolId: string, isAdmin: boolean) => [
   ...(isAdmin ? [{ href: `/p/${poolId}/admin`, label: 'Admin', icon: Settings }] : []),
 ]
 
-export function PoolShell({ pool, membership, username, children }: PoolShellProps) {
+export function PoolShell({ pool, membership, username, avatarUrl, children }: PoolShellProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [copied, setCopied] = useState(false)
@@ -66,12 +68,16 @@ export function PoolShell({ pool, membership, username, children }: PoolShellPro
             </div>
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            <div className="text-right hidden sm:block mr-1">
-              <div className="flex items-center gap-1.5 justify-end">
+            <Link
+              href="/perfil"
+              className="flex items-center gap-1.5 mr-0.5 p-1 rounded-lg hover:bg-surface transition-colors"
+            >
+              <span className="text-right hidden sm:flex items-center gap-1.5">
                 <span className="font-bold text-xs">{username}</span>
                 {isAdmin && <span className="badge badge-admin">ADMIN</span>}
-              </div>
-            </div>
+              </span>
+              <Avatar username={username} avatarUrl={avatarUrl} size="sm" />
+            </Link>
             {isAdmin && (
               <Link
                 href={`/p/${pool.id}/admin`}
