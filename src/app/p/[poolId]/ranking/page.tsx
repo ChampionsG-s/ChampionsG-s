@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { RankingTable } from '@/components/ranking/ranking-table'
+import { RankingView } from '@/components/ranking/ranking-view'
 
 export default async function RankingPage({
   params,
@@ -26,7 +26,7 @@ export default async function RankingPage({
   }))
 
   return (
-    <RankingTable
+    <RankingView
       poolId={poolId}
       members={members}
       predictions={predsRes.data ?? []}

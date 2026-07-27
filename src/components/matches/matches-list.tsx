@@ -151,38 +151,29 @@ export function MatchesList({
         </span>
       </div>
 
-      <div className="flex items-center gap-2">
-        <div className="flex gap-1.5 overflow-x-auto flex-1 -mx-4 px-4 py-0.5 snap-x scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {jornadas.map((label) => {
-            const open = isJornadaOpen(label)
-            const active = currentJornada === label
-            const shortLabel = label.match(/^Jornada (\d+)$/)?.[1] ?? label
-            return (
-              <button
-                key={label}
-                onClick={() => setJornada(label)}
-                title={label}
-                className={cn(
-                  'snap-start flex-shrink-0 px-3.5 py-2 rounded-full text-xs font-bold transition-all',
-                  active
-                    ? 'bg-gradient-to-b from-gold-2 to-gold text-background shadow-md shadow-gold/20'
-                    : open
-                      ? 'border border-border text-muted hover:border-gold hover:text-gold'
-                      : 'border border-border text-border cursor-not-allowed opacity-50'
-                )}
-              >
-                {shortLabel} {!open && '🔒'}
-              </button>
-            )
-          })}
-        </div>
-
-        <a
-          href={`/p/${poolId}/ver`}
-          className="flex-shrink-0 text-xs font-bold text-gold hover:text-gold-2 transition-colors px-3 py-2 rounded-full border border-gold/30 hover:border-gold/60"
-        >
-          👁 Ver apuestas
-        </a>
+      <div className="flex gap-1.5 overflow-x-auto -mx-4 px-4 py-0.5 snap-x scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {jornadas.map((label) => {
+          const open = isJornadaOpen(label)
+          const active = currentJornada === label
+          const shortLabel = label.match(/^Jornada (\d+)$/)?.[1] ?? label
+          return (
+            <button
+              key={label}
+              onClick={() => setJornada(label)}
+              title={label}
+              className={cn(
+                'snap-start flex-shrink-0 px-3.5 py-2 rounded-full text-xs font-bold transition-all',
+                active
+                  ? 'bg-gradient-to-b from-gold-2 to-gold text-background shadow-md shadow-gold/20'
+                  : open
+                    ? 'border border-border text-muted hover:border-gold hover:text-gold'
+                    : 'border border-border text-border cursor-not-allowed opacity-50'
+              )}
+            >
+              {shortLabel} {!open && '🔒'}
+            </button>
+          )
+        })}
       </div>
 
       {isAdmin && (
