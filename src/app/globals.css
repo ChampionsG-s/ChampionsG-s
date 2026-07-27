@@ -15,13 +15,13 @@
 
   html {
     /* Evita el "flash" blanco al cargar en móviles con overscroll */
-    background-color: #060e08;
+    background-color: #070b16;
   }
 
   body {
-    background-color: #060e08;
-    background-image: radial-gradient(circle at 50% 0%, rgba(212, 160, 23, 0.06), transparent 60%);
-    color: #ede8d5;
+    background-color: #070b16;
+    background-image: radial-gradient(circle at 50% 0%, rgba(212, 160, 23, 0.08), transparent 60%);
+    color: #f3f5fa;
     font-family: var(--font-inter), sans-serif;
     -webkit-tap-highlight-color: transparent;
     /* Evita que el rebote/zoom del navegador móvil deforme el layout */
@@ -30,8 +30,8 @@
 
   /* Custom scrollbar */
   ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: #070d09; }
-  ::-webkit-scrollbar-thumb { background: #1b3820; border-radius: 2px; }
+  ::-webkit-scrollbar-track { background: #0a0f1e; }
+  ::-webkit-scrollbar-thumb { background: #213050; border-radius: 2px; }
 
   /* Remove number input arrows */
   input[type='number'] {
