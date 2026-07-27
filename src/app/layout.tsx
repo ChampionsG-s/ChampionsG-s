@@ -17,7 +17,7 @@ const bebas = Bebas_Neue({
 export const metadata: Metadata = {
   title: 'Champions G\'s',
   description: 'La quiniela de la Liga española de la próxima temporada',
-  icons: { icon: '/favicon.svg' },
+  icons: { icon: '/logo.jpg', apple: '/logo.jpg' },
 }
 
 export const viewport: Viewport = {

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/avatar'
@@ -118,6 +119,16 @@ export function PoolsView({ memberships: initial, userId, isPlatformAdmin, usern
       </button>
 
       <div className="text-center mb-8 mt-2">
+        <div className="mx-auto mb-3 w-24 h-24 rounded-2xl bg-white p-1.5 shadow-lg shadow-black/30 ring-1 ring-gold/30">
+          <Image
+            src="/logo.jpg"
+            alt="Champions G's"
+            width={96}
+            height={96}
+            className="w-full h-full object-contain rounded-xl"
+            priority
+          />
+        </div>
         <p className="text-xs tracking-[0.3em] text-gold font-bold uppercase mb-2">
           Champions G's
         </p>
