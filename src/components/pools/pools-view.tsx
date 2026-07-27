@@ -99,7 +99,7 @@ export function PoolsView({ memberships: initial, userId, isPlatformAdmin, usern
           <div className="flex items-center gap-2 min-w-0">
             <div className="w-9 h-9 rounded-lg bg-white p-1 flex-shrink-0">
               <Image
-                src="/logo.jpg"
+                src="/logo.png"
                 alt="Champions G's"
                 width={36}
                 height={36}
@@ -138,7 +138,7 @@ export function PoolsView({ memberships: initial, userId, isPlatformAdmin, usern
       <div className="text-center mb-8 mt-2">
         <div className="mx-auto mb-4 w-28 h-28 rounded-2xl bg-white p-2 shadow-lg shadow-black/30 ring-1 ring-gold/30">
           <Image
-            src="/logo.jpg"
+            src="/logo.png"
             alt="Champions G's"
             width={112}
             height={112}

@@ -15,7 +15,7 @@ function emailFromUsername(username: string) {
     .replace(/ñ/gi, 'n')
     .toLowerCase().trim().replace(/\s+/g, '_')
     .replace(/[^a-z0-9_]/g, '') // strip anything else invalid
-  return `${normalized}@championsg-s.app`
+  return `${normalized}@users.tipstr.app`
 }
 
 export default function LoginPage() {
