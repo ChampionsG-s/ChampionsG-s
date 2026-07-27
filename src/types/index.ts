@@ -73,7 +73,6 @@ export interface PoolMatchTeams {
 
 export interface Result {
   id: string
-  pool_id: string
   match_id: string
   home_score: number
   away_score: number

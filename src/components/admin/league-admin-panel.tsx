@@ -104,17 +104,16 @@ export function LeagueAdminPanel({
       const awayScore = side === 'away_score' ? num : (existing?.away_score ?? 0)
       const updated = existing
         ? { ...existing, home_score: homeScore, away_score: awayScore }
-        : { match_id: matchId, pool_id: poolId, home_score: homeScore, away_score: awayScore, source: 'manual' as const }
+        : { match_id: matchId, home_score: homeScore, away_score: awayScore, source: 'manual' as const }
 
       setResults(prev => [...prev.filter(result => result.match_id !== matchId), updated as Result])
 
       await supabase.from('results').upsert({
-        pool_id: poolId,
         match_id: matchId,
         home_score: homeScore,
         away_score: awayScore,
         source: 'manual',
-      }, { onConflict: 'pool_id,match_id' })
+      }, { onConflict: 'match_id' })
     } catch (err) {
       console.error('Error setting result:', err)
       alert('Error al guardar el resultado. Intenta de nuevo.')

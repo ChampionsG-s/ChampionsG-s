@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
@@ -15,7 +15,7 @@ function emailFromUsername(username: string) {
     .replace(/ñ/gi, 'n')
     .toLowerCase().trim().replace(/\s+/g, '_')
     .replace(/[^a-z0-9_]/g, '') // strip anything else invalid
-  return `${normalized}@users.tipstr.app`
+  return `${normalized}@championsg-s.app`
 }
 
 export default function LoginPage() {
@@ -27,6 +27,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+
+  useEffect(() => {
+    // Transición lenta del formulario (300ms después de cargar)
+    const timer = setTimeout(() => {
+      setShowForm(true)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -88,26 +97,45 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4">
-      <div className="text-center mb-8">
-        <p className="text-xs tracking-widest text-gold font-bold uppercase mb-2">
-          Champions G's
-        </p>
-        <h1 className="text-6xl font-black tracking-wider text-cream">
-          TIP<span className="text-gold">STR</span>
-        </h1>
-        <p className="text-muted text-sm mt-2">Crea o únete a tu quiniela de Liga</p>
+    <div className="relative min-h-screen w-full bg-black overflow-hidden">
+      {/* Video Background - Always Visible */}
+      <div className="absolute inset-0 w-full h-full z-0">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="w-full h-full object-cover"
+        >
+          <source src="/videos/shield-celebration.mp4" type="video/mp4" />
+          Tu navegador no soporta el elemento video
+        </video>
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-black/20"></div>
       </div>
 
-      <div className="w-full max-w-sm">
-        <div className="flex gap-1 bg-surface-2 rounded-lg p-1 mb-4">
+      {/* Login Form */}
+      <div className={cn(
+        'absolute inset-0 z-10 flex flex-col items-center justify-center px-4',
+        'transition-all duration-2000',
+        showForm ? 'opacity-100' : 'opacity-0 pointer-events-none'
+      )}>
+        <div className="text-center mb-8">
+          <h1 className="text-7xl font-black tracking-tight text-cream drop-shadow-lg" style={{ fontFamily: 'var(--font-playfair)' }}>
+            Champions<span className="text-gold">G's</span>
+          </h1>
+          <p className="text-cream text-sm mt-2 drop-shadow-lg">Crea o únete a tu quiniela de Liga</p>
+        </div>
+
+      <div className="w-full max-w-sm backdrop-blur-md bg-black/30 rounded-xl p-8 border border-gold/20">
+        <div className="flex gap-1 bg-surface-2/50 rounded-lg p-1 mb-4 backdrop-blur-sm">
           {(['login', 'register'] as Mode[]).map((m) => (
             <button
               key={m}
               onClick={() => { setMode(m); setError('') }}
               className={cn(
                 'flex-1 py-2 rounded-md text-sm font-bold transition-all duration-150',
-                mode === m ? 'bg-gold text-background' : 'text-muted hover:text-cream'
+                mode === m ? 'bg-gold text-background' : 'text-cream/70 hover:text-cream'
               )}
             >
               {m === 'login' ? 'Entrar' : 'Registrarse'}
@@ -115,13 +143,13 @@ export default function LoginPage() {
           ))}
         </div>
 
-        <form onSubmit={handleSubmit} className="card space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wide text-muted mb-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wide text-gold/80 mb-1.5">
               Nombre de usuario
             </label>
             <input
-              className="input"
+              className="w-full px-3 py-2 bg-black/40 border border-gold/30 rounded-lg text-cream placeholder-cream/50 focus:border-gold focus:outline-none transition-colors"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Ej: Manolillo"
@@ -131,11 +159,11 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wide text-muted mb-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wide text-gold/80 mb-1.5">
               Contraseña
             </label>
             <input
-              className="input"
+              className="w-full px-3 py-2 bg-black/40 border border-gold/30 rounded-lg text-cream placeholder-cream/50 focus:border-gold focus:outline-none transition-colors"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -151,11 +179,12 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="btn-primary w-full mt-2 disabled:opacity-50"
+            className="w-full mt-4 py-2 bg-gold hover:bg-gold/90 text-background font-bold rounded-lg transition-all disabled:opacity-50 drop-shadow-lg"
           >
             {loading ? 'Cargando...' : mode === 'login' ? 'Entrar' : 'Crear cuenta'}
           </button>
         </form>
+      </div>
       </div>
     </div>
   )

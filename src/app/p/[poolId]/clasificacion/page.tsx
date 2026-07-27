@@ -11,7 +11,7 @@ export default async function ClasificacionPage({
 
   const [matchesRes, resultsRes] = await Promise.all([
     supabase.from('matches').select('*').order('match_number'),
-    supabase.from('results').select('*').eq('pool_id', poolId),
+    supabase.from('results').select('*'),
   ])
 
   return (
