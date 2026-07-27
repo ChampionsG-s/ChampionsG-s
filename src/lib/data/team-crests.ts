@@ -1,0 +1,25 @@
+// Escudos oficiales de los 20 equipos de la Liga (temporada 2026-2027),
+// alojados en Wikimedia Commons (mismo criterio que ya se usaba para las
+// banderas de paises via flagcdn: se enlaza la imagen, no se redistribuye).
+export const TEAM_CRESTS: Record<string, string> = {
+  'Athletic Club': 'https://upload.wikimedia.org/wikipedia/en/thumb/9/98/Club_Athletic_Bilbao_logo.svg/330px-Club_Athletic_Bilbao_logo.svg.png',
+  'Atlético de Madrid': 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f9/Atletico_Madrid_Logo_2024.svg/330px-Atletico_Madrid_Logo_2024.svg.png',
+  'CA Osasuna': 'https://upload.wikimedia.org/wikipedia/en/thumb/3/38/CA_Osasuna_2024_crest.svg/330px-CA_Osasuna_2024_crest.svg.png',
+  'Deportivo Alavés': 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f8/Deportivo_Alaves_logo_%282020%29.svg/330px-Deportivo_Alaves_logo_%282020%29.svg.png',
+  'Elche CF': 'https://upload.wikimedia.org/wikipedia/en/thumb/a/a7/Elche_CF_logo.svg/330px-Elche_CF_logo.svg.png',
+  'FC Barcelona': 'https://upload.wikimedia.org/wikipedia/en/thumb/4/47/FC_Barcelona_%28crest%29.svg/330px-FC_Barcelona_%28crest%29.svg.png',
+  'Getafe CF': 'https://upload.wikimedia.org/wikipedia/en/thumb/4/46/Getafe_logo.svg/330px-Getafe_logo.svg.png',
+  'Levante UD': 'https://upload.wikimedia.org/wikipedia/en/thumb/7/7b/Levante_Uni%C3%B3n_Deportiva%2C_S.A.D._logo.svg/330px-Levante_Uni%C3%B3n_Deportiva%2C_S.A.D._logo.svg.png',
+  'Málaga CF': 'https://upload.wikimedia.org/wikipedia/en/thumb/6/6d/M%C3%A1laga_CF.svg/330px-M%C3%A1laga_CF.svg.png',
+  'RC Celta': 'https://upload.wikimedia.org/wikipedia/en/thumb/1/12/RC_Celta_de_Vigo_logo.svg/330px-RC_Celta_de_Vigo_logo.svg.png',
+  'RC Deportivo': 'https://upload.wikimedia.org/wikipedia/en/thumb/5/56/RC_Deportivo_A_Coru%C3%B1a_logo_2026.svg/330px-RC_Deportivo_A_Coru%C3%B1a_logo_2026.svg.png',
+  'RCD Espanyol': 'https://upload.wikimedia.org/wikipedia/en/thumb/9/92/RCD_Espanyol_crest.svg/330px-RCD_Espanyol_crest.svg.png',
+  'Rayo Vallecano': 'https://upload.wikimedia.org/wikipedia/en/thumb/d/d8/Rayo_Vallecano_logo.svg/330px-Rayo_Vallecano_logo.svg.png',
+  'Real Betis': 'https://upload.wikimedia.org/wikipedia/en/thumb/2/2f/Real_Betis_2022_logo.svg/330px-Real_Betis_2022_logo.svg.png',
+  'Real Madrid': 'https://upload.wikimedia.org/wikipedia/en/thumb/5/56/Real_Madrid_CF.svg/330px-Real_Madrid_CF.svg.png',
+  'Real Racing Club': 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f5/Racing_de_Santander_logo.svg/330px-Racing_de_Santander_logo.svg.png',
+  'Real Sociedad': 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f1/Real_Sociedad_logo.svg/330px-Real_Sociedad_logo.svg.png',
+  'Sevilla FC': 'https://upload.wikimedia.org/wikipedia/en/thumb/3/3b/Sevilla_FC_logo.svg/330px-Sevilla_FC_logo.svg.png',
+  'Valencia CF': 'https://upload.wikimedia.org/wikipedia/en/thumb/c/ce/Valenciacf.svg/330px-Valenciacf.svg.png',
+  'Villarreal CF': 'https://upload.wikimedia.org/wikipedia/en/thumb/b/b9/Villarreal_CF_logo-en.svg/330px-Villarreal_CF_logo-en.svg.png',
+}

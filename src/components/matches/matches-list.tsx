@@ -135,18 +135,24 @@ export function MatchesList({
 
   return (
     <div className="space-y-4">
-      {!currentOpen ? (
-        <div className="bg-blue-900/30 border border-blue-700 rounded-xl px-4 py-3 text-sm">
-          🔒 Jornada cerrada · Ya no se puede apostar en esta jornada
-        </div>
-      ) : (
-        <div className="bg-amber-900/30 border border-amber-700 rounded-xl px-4 py-3 text-sm text-amber-200">
-          ⚠️ Las apuestas se cierran cuando llegue la fecha límite de la jornada
-        </div>
-      )}
+      <div
+        className={cn(
+          'flex items-center gap-2 rounded-xl px-4 py-3 text-sm border',
+          currentOpen
+            ? 'bg-amber-900/20 border-amber-800/60 text-amber-200'
+            : 'bg-blue-900/20 border-blue-800/60 text-blue-200'
+        )}
+      >
+        <span>{currentOpen ? '⚠️' : '🔒'}</span>
+        <span className="text-xs sm:text-sm">
+          {currentOpen
+            ? 'Las apuestas se cierran cuando llegue la fecha límite de la jornada'
+            : 'Jornada cerrada · Ya no se puede apostar en esta jornada'}
+        </span>
+      </div>
 
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex gap-1.5 flex-wrap">
+      <div className="flex items-center gap-2">
+        <div className="flex gap-1.5 overflow-x-auto flex-1 -mx-4 px-4 py-0.5 snap-x scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {jornadas.map((label) => {
             const open = isJornadaOpen(label)
             const active = currentJornada === label
@@ -155,9 +161,9 @@ export function MatchesList({
                 key={label}
                 onClick={() => setJornada(label)}
                 className={cn(
-                  'px-3 py-1.5 rounded-full text-xs font-bold transition-all',
+                  'snap-start flex-shrink-0 px-3.5 py-2 rounded-full text-xs font-bold transition-all',
                   active
-                    ? 'bg-gold text-background'
+                    ? 'bg-gradient-to-b from-gold-2 to-gold text-background shadow-md shadow-gold/20'
                     : open
                       ? 'border border-border text-muted hover:border-gold hover:text-gold'
                       : 'border border-border text-border cursor-not-allowed opacity-50'
@@ -169,18 +175,21 @@ export function MatchesList({
           })}
         </div>
 
-        <a href={`/p/${poolId}/ver`} className="text-xs font-bold text-gold hover:text-cream transition-colors">
-          Ver apuestas
+        <a
+          href={`/p/${poolId}/ver`}
+          className="flex-shrink-0 text-xs font-bold text-gold hover:text-gold-2 transition-colors px-3 py-2 rounded-full border border-gold/30 hover:border-gold/60"
+        >
+          👁 Ver apuestas
         </a>
       </div>
 
       {isAdmin && (
-        <div className="bg-red-900/20 border border-red-800 rounded-xl px-4 py-2 text-xs text-red-300 font-bold uppercase tracking-wide">
+        <div className="bg-red-900/15 border border-red-900/50 rounded-xl px-4 py-2.5 text-xs text-red-300 font-bold uppercase tracking-wide">
           Admin — controla los resultados y la apertura de cada jornada
         </div>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-2.5">
         {visibleMatches.map(m => (
           <MatchCard
             key={m.id}
@@ -225,8 +234,8 @@ function MatchCard({ match, realTeams, pred, result, isLocked, onPred, onSignPre
   const isFullHit = pts !== null && (isBonus ? pts === ptsExactValue : pts > 0)
 
   const cardClass = cn(
-    'bg-surface-2 border rounded-xl p-3 transition-colors',
-    isBonus && 'border-gold/50',
+    'bg-surface-2 border rounded-2xl p-3.5 shadow-md shadow-black/10 transition-colors',
+    isBonus && 'border-gold/50 bg-gradient-to-b from-gold/[0.06] to-transparent',
     isFullHit && 'border-green-700 bg-green-950/30',
     pts !== null && pts > 0 && !isFullHit && 'border-amber-700 bg-amber-950/20',
     pts === null && !isBonus && 'border-border',
@@ -237,24 +246,28 @@ function MatchCard({ match, realTeams, pred, result, isLocked, onPred, onSignPre
 
   return (
     <div className={cardClass}>
-      <div className="text-center text-xs text-muted mb-2 flex items-center justify-center gap-2">
+      <div className="text-center text-[11px] text-muted mb-2.5 flex items-center justify-center gap-1.5">
         <span>{jornadaLabel}</span>
-        <span>·</span>
+        <span className="opacity-50">·</span>
         <span>{dateDisplay}</span>
-        {isBonus && <span className="text-gold font-bold">⭐ BONUS</span>}
+        {isBonus && (
+          <span className="ml-1 badge bg-gold/15 text-gold flex items-center gap-1">
+            ⭐ BONUS
+          </span>
+        )}
       </div>
 
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <div className="flex items-center gap-1.5 font-semibold text-sm overflow-hidden">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-1.5">
+        <div className="flex flex-col items-center gap-1 text-center pt-0.5">
           <Flag team={displayHome} />
-          <span className="truncate">{displayHome}</span>
+          <span className="font-semibold text-xs leading-tight line-clamp-2">{displayHome}</span>
         </div>
 
-        <div className="flex flex-col items-center gap-1 min-w-[100px]">
+        <div className="flex flex-col items-center gap-1.5 min-w-[102px]">
           {hasResult && (
-            <div className="font-black text-2xl text-gold tracking-widest leading-none">
+            <div className="font-display text-2xl text-gold tracking-widest leading-none">
               {result!.home_score}–{result!.away_score}
-              {result!.source === 'api' && <span className="ml-1 text-[9px] text-green-400 font-normal">⚡</span>}
+              {result!.source === 'api' && <span className="ml-1 text-[9px] text-green-400 font-sans font-normal">⚡</span>}
             </div>
           )}
           {isBonus ? (
@@ -278,14 +291,14 @@ function MatchCard({ match, realTeams, pred, result, isLocked, onPred, onSignPre
               {pts}pt{pts !== 1 ? 's' : ''}
             </span>
           )}
-          <span className="text-[9px] text-muted">
+          <span className="text-[9px] text-muted text-center">
             {isBonus ? `Exacto=${ptsExactValue}pts · Signo=${ptsWinnerValue}pt` : `Acierto de signo (1X2)=${ptsWinnerValue}pt`}
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 font-semibold text-sm overflow-hidden flex-row-reverse">
+        <div className="flex flex-col items-center gap-1 text-center pt-0.5">
           <Flag team={displayAway} />
-          <span className="truncate text-right">{displayAway}</span>
+          <span className="font-semibold text-xs leading-tight line-clamp-2">{displayAway}</span>
         </div>
       </div>
     </div>
@@ -301,7 +314,7 @@ interface SignSelectorProps {
 function SignSelector({ value, disabled, onChange }: SignSelectorProps) {
   const signs: MatchSign[] = ['1', 'X', '2']
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1">
       {signs.map((sign) => (
         <button
           key={sign}
@@ -309,11 +322,11 @@ function SignSelector({ value, disabled, onChange }: SignSelectorProps) {
           disabled={disabled}
           onClick={() => onChange(sign)}
           className={cn(
-            'w-9 h-9 rounded-lg font-black text-sm transition-colors border',
+            'w-10 h-10 rounded-xl font-black text-sm transition-all border active:scale-95',
             value === sign
-              ? 'bg-gold border-gold text-background'
+              ? 'bg-gradient-to-b from-gold-2 to-gold border-gold text-background shadow-sm shadow-gold/30'
               : 'bg-surface border-border text-cream hover:border-gold',
-            disabled && 'opacity-35 cursor-not-allowed hover:border-border'
+            disabled && 'opacity-35 cursor-not-allowed hover:border-border active:scale-100'
           )}
         >
           {sign}
@@ -350,10 +363,10 @@ function ScoreInput({ value, disabled, onChange, adminStyle }: ScoreInputProps) 
       onChange={(e) => setLocalValue(e.target.value)}
       onBlur={(e) => onChange(e.target.value)}
       className={cn(
-        'w-9 h-9 text-center rounded-lg font-black text-lg outline-none transition-colors',
+        'w-10 h-10 text-center rounded-xl font-black text-lg outline-none transition-colors',
         adminStyle
           ? 'bg-red-950 border border-red-800 text-red-300 w-8 h-8 text-sm'
-          : 'bg-surface border border-border text-cream focus:border-gold disabled:opacity-35 disabled:cursor-not-allowed'
+          : 'bg-surface border border-border text-cream focus:border-gold focus:ring-2 focus:ring-gold/20 disabled:opacity-35 disabled:cursor-not-allowed'
       )}
     />
   )

@@ -45,14 +45,17 @@ export function PoolShell({ pool, membership, username, children }: PoolShellPro
   return (
     <div className="min-h-screen flex flex-col max-w-3xl mx-auto">
       {/* Topbar */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border px-4 py-3">
+      <header className="safe-top sticky top-0 z-40 bg-background/85 backdrop-blur-md border-b border-border px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <Link href="/pools" className="text-muted hover:text-cream transition-colors flex-shrink-0">
+            <Link
+              href="/pools"
+              className="text-muted hover:text-cream transition-colors flex-shrink-0 -ml-1.5 p-1.5 rounded-lg hover:bg-surface"
+            >
               <ArrowLeft size={18} />
             </Link>
             <div className="min-w-0">
-              <h1 className="font-black text-base truncate leading-tight">{pool.name}</h1>
+              <h1 className="font-display text-lg tracking-wide truncate leading-tight">{pool.name}</h1>
               <button
                 onClick={copyInviteCode}
                 className="text-[10px] text-muted hover:text-gold transition-colors flex items-center gap-1"
@@ -62,8 +65,8 @@ export function PoolShell({ pool, membership, username, children }: PoolShellPro
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="text-right hidden sm:block">
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <div className="text-right hidden sm:block mr-1">
               <div className="flex items-center gap-1.5 justify-end">
                 <span className="font-bold text-xs">{username}</span>
                 {isAdmin && <span className="badge badge-admin">ADMIN</span>}
@@ -73,7 +76,7 @@ export function PoolShell({ pool, membership, username, children }: PoolShellPro
               <Link
                 href={`/p/${pool.id}/admin`}
                 className={cn(
-                  'p-2 rounded-lg transition-colors',
+                  'p-2.5 rounded-lg transition-colors',
                   pathname.includes('/admin')
                     ? 'bg-gold text-background'
                     : 'text-muted hover:text-cream hover:bg-surface'
@@ -84,7 +87,7 @@ export function PoolShell({ pool, membership, username, children }: PoolShellPro
             )}
             <button
               onClick={handleLogout}
-              className="p-2 rounded-lg text-muted hover:text-cream hover:bg-surface transition-colors"
+              className="p-2.5 rounded-lg text-muted hover:text-cream hover:bg-surface transition-colors"
             >
               <LogOut size={18} />
             </button>
@@ -93,12 +96,12 @@ export function PoolShell({ pool, membership, username, children }: PoolShellPro
       </header>
 
       {/* Content */}
-      <main className="flex-1 px-4 py-4 pb-24">
+      <main className="flex-1 px-4 py-4 pb-28">
         {children}
       </main>
 
       {/* Bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-surface-2 border-t border-border">
+      <nav className="safe-bottom fixed bottom-0 left-0 right-0 z-40 bg-surface-2/95 backdrop-blur-md border-t border-border">
         <div className="max-w-3xl mx-auto flex">
           {navItems(pool.id, isAdmin).map(({ href, label, icon: Icon }) => {
             const active = pathname === href
@@ -107,11 +110,17 @@ export function PoolShell({ pool, membership, username, children }: PoolShellPro
                 key={href}
                 href={href}
                 className={cn(
-                  'flex-1 flex flex-col items-center gap-0.5 py-2.5 text-xs font-semibold transition-colors',
+                  'relative flex-1 flex flex-col items-center gap-1 py-2.5 min-h-[56px] justify-center text-[11px] font-semibold transition-colors',
                   active ? 'text-gold' : 'text-muted hover:text-cream'
                 )}
               >
-                <Icon size={18} strokeWidth={active ? 2.5 : 2} />
+                <span
+                  className={cn(
+                    'absolute top-0 h-0.5 w-8 rounded-full bg-gold transition-opacity',
+                    active ? 'opacity-100' : 'opacity-0'
+                  )}
+                />
+                <Icon size={19} strokeWidth={active ? 2.5 : 2} />
                 <span>{label}</span>
               </Link>
             )

@@ -1,5 +1,5 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import type { Metadata, Viewport } from 'next'
+import { Inter, Bebas_Neue } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers'
 
@@ -8,10 +8,24 @@ const inter = Inter({
   variable: '--font-inter',
 })
 
+const bebas = Bebas_Neue({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-bebas',
+})
+
 export const metadata: Metadata = {
   title: 'Champions G\'s',
   description: 'La quiniela de la Liga española de la próxima temporada',
   icons: { icon: '/favicon.svg' },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#070b16',
 }
 
 export default function RootLayout({
@@ -20,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="es" className={inter.variable}>
+    <html lang="es" className={`${inter.variable} ${bebas.variable}`}>
       <body className="bg-background text-cream antialiased">
         <Providers>{children}</Providers>
       </body>

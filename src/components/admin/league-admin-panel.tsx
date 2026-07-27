@@ -179,7 +179,7 @@ export function LeagueAdminPanel({
                   <div key={member.id} className="flex items-center gap-3 bg-surface-2 rounded-lg px-3 py-2.5">
                     <div className="flex-1">
                       <p className="font-bold text-sm">{member.username}</p>
-                      <p className="text-xs text-muted">{new Date(member.joined_at).toLocaleString('es')}</p>
+                      <p className="text-xs text-muted">{new Date(member.created_at).toLocaleString('es')}</p>
                     </div>
                     <button
                       onClick={() => handleApprove(member.id)}
@@ -274,13 +274,13 @@ export function LeagueAdminPanel({
                       const result = results.find(item => item.match_id === match.id)
                       const isBonus = match.is_bonus ?? false
                       return (
-                        <div key={match.id} className={cn('bg-surface-2 border rounded-lg p-3', isBonus ? 'border-gold' : 'border-border')}>
-                          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                            <div className="flex items-center gap-1.5 text-sm font-semibold overflow-hidden">
+                        <div key={match.id} className={cn('bg-surface-2 border rounded-xl p-3 shadow-sm shadow-black/10', isBonus ? 'border-gold' : 'border-border')}>
+                          <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-1.5">
+                            <div className="flex flex-col items-center gap-1 text-center text-xs font-semibold">
                               <Flag team={match.home_team || match.home || ''} size="sm" />
-                              <span className="truncate">{match.home_team || match.home || '-'}</span>
+                              <span className="leading-tight line-clamp-2">{match.home_team || match.home || '-'}</span>
                             </div>
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 pt-1">
                               <ResultInput
                                 value={result?.home_score}
                                 onSave={(value) => handleSetResult(match.id, 'home_score', value)}
@@ -291,9 +291,9 @@ export function LeagueAdminPanel({
                                 onSave={(value) => handleSetResult(match.id, 'away_score', value)}
                               />
                             </div>
-                            <div className="flex items-center gap-1.5 text-sm font-semibold overflow-hidden flex-row-reverse">
+                            <div className="flex flex-col items-center gap-1 text-center text-xs font-semibold">
                               <Flag team={match.away_team || match.away || ''} size="sm" />
-                              <span className="truncate text-right">{match.away_team || match.away || '-'}</span>
+                              <span className="leading-tight line-clamp-2">{match.away_team || match.away || '-'}</span>
                             </div>
                           </div>
                           <div className="flex items-center justify-between mt-2">

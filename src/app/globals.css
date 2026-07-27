@@ -13,17 +13,25 @@
     padding: 0;
   }
 
+  html {
+    /* Evita el "flash" blanco al cargar en móviles con overscroll */
+    background-color: #070b16;
+  }
+
   body {
-    background-color: #060e08;
-    color: #ede8d5;
+    background-color: #070b16;
+    background-image: radial-gradient(circle at 50% 0%, rgba(212, 160, 23, 0.08), transparent 60%);
+    color: #f3f5fa;
     font-family: var(--font-inter), sans-serif;
     -webkit-tap-highlight-color: transparent;
+    /* Evita que el rebote/zoom del navegador móvil deforme el layout */
+    overscroll-behavior-y: none;
   }
 
   /* Custom scrollbar */
   ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: #070d09; }
-  ::-webkit-scrollbar-thumb { background: #1b3820; border-radius: 2px; }
+  ::-webkit-scrollbar-track { background: #0a0f1e; }
+  ::-webkit-scrollbar-thumb { background: #213050; border-radius: 2px; }
 
   /* Remove number input arrows */
   input[type='number'] {
@@ -37,23 +45,25 @@
 
 @layer components {
   .card {
-    @apply bg-surface border border-border rounded-xl p-4;
+    @apply bg-surface border border-border rounded-xl p-4 shadow-lg shadow-black/20;
   }
 
   .btn-primary {
-    @apply bg-gold text-background font-bold rounded-lg px-4 py-2.5 
-           hover:bg-gold-2 transition-colors duration-150 text-sm;
+    @apply bg-gradient-to-b from-gold-2 to-gold text-background font-bold rounded-lg px-4 py-3 min-h-[44px]
+           shadow-md shadow-gold/10 hover:shadow-gold/20 hover:brightness-110
+           active:scale-[0.97] transition-all duration-150 text-sm;
   }
 
   .btn-secondary {
-    @apply bg-transparent border border-border text-cream font-semibold rounded-lg 
-           px-4 py-2.5 hover:border-gold hover:text-gold transition-colors duration-150 text-sm;
+    @apply bg-surface-2 border border-border text-cream font-semibold rounded-lg
+           px-4 py-3 min-h-[44px] hover:border-gold hover:text-gold
+           active:scale-[0.97] transition-all duration-150 text-sm;
   }
 
   .input {
-    @apply w-full bg-surface-2 border border-border rounded-lg px-3 py-2.5 
+    @apply w-full bg-surface-2 border border-border rounded-lg px-3 py-3 min-h-[44px]
            text-cream text-sm outline-none transition-colors duration-150
-           focus:border-gold placeholder:text-muted
+           focus:border-gold focus:ring-2 focus:ring-gold/20 placeholder:text-muted
            disabled:opacity-40 disabled:cursor-not-allowed;
   }
 
@@ -71,5 +81,16 @@
 
   .badge-pending {
     @apply bg-amber-900 text-amber-300;
+  }
+}
+
+@layer utilities {
+  /* Deja hueco para la barra de gestos / home indicator en iOS y Android */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
   }
 }

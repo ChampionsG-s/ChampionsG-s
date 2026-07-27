@@ -13,27 +13,30 @@ export const TEAM_FLAGS: Record<string, string> = {
   'Inglaterra': 'gb-eng', 'Croacia': 'hr', 'Ghana': 'gh', 'Panamá': 'pa',
 }
 
+// Nombres tal cual aparecen en matches.home_team / away_team para la
+// temporada 2026-2027 (deben coincidir exactamente para que la
+// Clasificacion pueda casar los resultados con cada equipo).
 export const LEAGUE_TEAMS = [
   'FC Barcelona',
   'Real Madrid',
   'Atlético de Madrid',
   'Athletic Club',
-  'Villarreal',
+  'Villarreal CF',
   'Real Betis',
   'Real Sociedad',
-  'Valencia',
-  'Sevilla',
-  'Osasuna',
-  'Celta de Vigo',
+  'Valencia CF',
+  'Sevilla FC',
+  'CA Osasuna',
+  'RC Celta',
   'Rayo Vallecano',
-  'Getafe',
-  'Mallorca',
-  'Las Palmas',
-  'Girona',
-  'Alavés',
-  'Espanyol',
-  'Leganés',
-  'Real Valladolid',
+  'Getafe CF',
+  'Deportivo Alavés',
+  'RCD Espanyol',
+  'Elche CF',
+  'Levante UD',
+  'Málaga CF',
+  'RC Deportivo',
+  'Real Racing Club',
 ] as const
 
 export const ALL_TEAMS = [...LEAGUE_TEAMS]

@@ -35,7 +35,7 @@ export interface PoolMember {
   locked_matches: boolean
   locked_spain: boolean
   locked_awards: boolean
-  joined_at: string
+  created_at: string
   // joined data (optional, populated by queries)
   username?: string
 }
