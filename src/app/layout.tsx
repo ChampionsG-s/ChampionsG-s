@@ -40,11 +40,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-<<<<<<< HEAD
-    <html lang="es" className={`${inter.variable} ${bebas.variable}`}>
-=======
-    <html lang="es" className={`${inter.variable} ${playfair.variable}`}>
->>>>>>> cambiosversion1.0
+    <html lang="es" className={`${inter.variable} ${bebas.variable} ${playfair.variable}`}>
       <body className="bg-background text-cream antialiased">
         <Providers>{children}</Providers>
       </body>
