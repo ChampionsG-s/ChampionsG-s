@@ -6,8 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/avatar'
-import { Trophy, CalendarDays, Table2, Settings, LogOut, ArrowLeft, Copy, Check } from 'lucide-react'
-import { useState } from 'react'
+import { Trophy, CalendarDays, Table2, Settings, LogOut, ArrowLeft } from 'lucide-react'
 import type { Pool, PoolMember } from '@/types'
 
 interface PoolShellProps {
@@ -28,7 +27,6 @@ const navItems = (poolId: string, isAdmin: boolean) => [
 export function PoolShell({ pool, membership, username, avatarUrl, children }: PoolShellProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const [copied, setCopied] = useState(false)
 
   const isAdmin = membership.role === 'admin'
 
@@ -37,12 +35,6 @@ export function PoolShell({ pool, membership, username, avatarUrl, children }: P
     await supabase.auth.signOut()
     router.push('/login')
     router.refresh()
-  }
-
-  const copyInviteCode = () => {
-    navigator.clipboard.writeText(pool.invite_code)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
   }
 
   return (
@@ -62,13 +54,6 @@ export function PoolShell({ pool, membership, username, avatarUrl, children }: P
             </div>
             <div className="min-w-0">
               <h1 className="font-display text-lg tracking-wide truncate leading-tight">{pool.name}</h1>
-              <button
-                onClick={copyInviteCode}
-                className="text-[10px] text-muted hover:text-gold transition-colors flex items-center gap-1"
-              >
-                {copied ? <Check size={10} /> : <Copy size={10} />}
-                {pool.invite_code}
-              </button>
             </div>
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
