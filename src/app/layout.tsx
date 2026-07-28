@@ -23,7 +23,7 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: 'Champions G\'s',
   description: 'La quiniela de la Liga española de la próxima temporada',
-  icons: { icon: '/logo.jpg', apple: '/logo.jpg' },
+  icons: { icon: '/logo.png', apple: '/logo.png' },
 }
 
 export const viewport: Viewport = {
