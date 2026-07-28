@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 564 141" role="img" aria-labelledby="title desc">
+  <title id="title">LaLiga</title>
+  <desc id="desc">LaLiga wordmark in coral red with angular icon</desc>
+  <rect width="564" height="141" fill="none" />
+  <g fill="#ff4a4a">
+    <polygon points="14,15 60,15 28,62 6,82 1,64" />
+    <polygon points="74,15 120,15 86,66 48,118 30,105" />
+    <path d="M161 20h31v70h59v31h-90z" />
+    <path d="M288 20h32v101h-32z" />
+    <path d="M350 20h32v70h58v31h-90z" />
+    <path d="M470 35q0-15 9.5-25t24.5-10h36q15 0 24.5 10t9.5 25v51q0 15-9.5 25t-24.5 10h-36q-15 0-24.5-10t-9.5-25zm32 0v51q0 4 2.5 6.5T511 95h22q4 0 6.5-2.5T542 86V35q0-4-2.5-6.5T533 26h-22q-4 0-6.5 2.5T502 35z" />
+  </g>
+</svg>

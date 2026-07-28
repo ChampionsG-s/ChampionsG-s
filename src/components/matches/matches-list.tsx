@@ -227,11 +227,13 @@ function MatchCard({ match, realTeams, pred, result, isLocked, onPred, onSignPre
   const isFullHit = pts !== null && (isBonus ? pts === ptsExactValue : pts > 0)
 
   const cardClass = cn(
-    'bg-surface-2 border rounded-2xl p-3.5 shadow-md shadow-black/10 transition-colors',
-    isBonus && 'border-gold/50 bg-gradient-to-b from-gold/[0.06] to-transparent',
-    isFullHit && 'border-green-700 bg-green-950/30',
-    pts !== null && pts > 0 && !isFullHit && 'border-amber-700 bg-amber-950/20',
-    pts === null && !isBonus && 'border-border',
+    'relative overflow-hidden rounded-2xl border px-4 sm:px-5 py-2.5 sm:py-3 shadow-[0_12px_30px_rgba(0,0,0,0.35)] transition-all duration-300',
+    isBonus
+      ? 'border-gold/60 bg-[linear-gradient(160deg,rgba(212,160,23,0.20),rgba(10,14,24,0.92)_35%,rgba(7,11,22,0.95)_100%)]'
+      : 'border-slate-700/80 bg-[linear-gradient(155deg,rgba(29,47,83,0.42),rgba(10,15,30,0.95)_45%,rgba(7,11,22,0.95)_100%)]',
+    isFullHit && 'border-green-500/80 shadow-[0_14px_36px_rgba(8,117,63,0.35)]',
+    pts !== null && pts > 0 && !isFullHit && 'border-amber-500/70 shadow-[0_14px_36px_rgba(180,118,8,0.30)]',
+    pts === 0 && 'border-red-500/55 shadow-[0_14px_36px_rgba(148,23,23,0.28)]',
   )
 
   const dateStr = match.match_date || match.date || ''
@@ -239,24 +241,49 @@ function MatchCard({ match, realTeams, pred, result, isLocked, onPred, onSignPre
 
   return (
     <div className={cardClass}>
-      <div className="text-center text-[11px] text-muted mb-2.5 flex items-center justify-center gap-1.5">
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_12%,rgba(255,255,255,0.16),transparent_38%)]" />
+      <div aria-hidden className={cn(
+        'pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/35 to-transparent',
+        isBonus && 'via-gold/80'
+      )} />
+      {isBonus && (
+        <>
+          <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_90%_10%,rgba(212,160,23,0.24),transparent_38%)]" />
+          <div aria-hidden className="pointer-events-none absolute left-3 top-3 h-2 w-2 rounded-full bg-gold/70 shadow-[0_0_10px_rgba(212,160,23,0.9)]" />
+          <div aria-hidden className="pointer-events-none absolute right-3 top-3 h-2 w-2 rounded-full bg-gold/70 shadow-[0_0_10px_rgba(212,160,23,0.9)]" />
+          <div aria-hidden className="pointer-events-none absolute left-3 bottom-3 h-2 w-2 rounded-full bg-gold/70 shadow-[0_0_10px_rgba(212,160,23,0.9)]" />
+          <div aria-hidden className="pointer-events-none absolute right-3 bottom-3 h-2 w-2 rounded-full bg-gold/70 shadow-[0_0_10px_rgba(212,160,23,0.9)]" />
+        </>
+      )}
+
+      <div className={cn(
+        'text-center text-[10px] text-muted mb-1.5 flex items-center justify-center gap-1.5',
+        isBonus && 'text-gold/85'
+      )}>
         <span>{jornadaLabel}</span>
         <span className="opacity-50">·</span>
         <span>{dateDisplay}</span>
         {isBonus && (
-          <span className="ml-1 badge bg-gold/15 text-gold flex items-center gap-1">
-            ⭐ BONUS
+          <span className="ml-1 badge bg-gradient-to-r from-[#8a6915] to-[#d4a017] text-background border border-gold/70 shadow-[0_0_14px_rgba(212,160,23,0.45)] flex items-center gap-1.5 px-2.5 py-1">
+            <span>⭐</span>
+            <span className="tracking-wide">BONUS</span>
           </span>
         )}
       </div>
 
-      <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-1.5">
-        <div className="flex flex-col items-center gap-1 text-center pt-0.5">
-          <Flag team={displayHome} />
-          <span className="font-semibold text-xs leading-tight line-clamp-2">{displayHome}</span>
+      <div className="relative grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+        <div className={cn(
+          'flex flex-col items-center gap-1 text-center rounded-2xl border border-white/10 bg-black/15 py-1.5 px-2',
+          isBonus && 'border-gold/35 bg-gradient-to-b from-[#1e1a0d]/75 to-black/35 shadow-[inset_0_0_0_1px_rgba(212,160,23,0.15)]'
+        )}>
+          <Flag team={displayHome} size="lg" className="w-12 h-12 sm:w-14 sm:h-14 drop-shadow-[0_4px_8px_rgba(0,0,0,0.45)]" />
+          <span className="font-bold text-xs leading-tight line-clamp-2">{displayHome}</span>
         </div>
 
-        <div className="flex flex-col items-center gap-1.5 min-w-[102px]">
+        <div className={cn(
+          'flex flex-col items-center gap-1 min-w-[116px] rounded-2xl border border-white/12 bg-black/30 px-2.5 py-1.5 backdrop-blur-[1px]',
+          isBonus && 'border-gold/40 bg-gradient-to-b from-[#2c220e]/85 to-[#0c0f17]/85 shadow-[inset_0_0_0_1px_rgba(212,160,23,0.24)]'
+        )}>
           {hasResult && (
             <div className="font-display text-2xl text-gold tracking-widest leading-none">
               {result!.home_score}–{result!.away_score}
@@ -284,14 +311,17 @@ function MatchCard({ match, realTeams, pred, result, isLocked, onPred, onSignPre
               {pts}pt{pts !== 1 ? 's' : ''}
             </span>
           )}
-          <span className="text-[9px] text-muted text-center">
+          <span className={cn('text-[8px] text-muted text-center leading-tight', isBonus && 'text-gold/85')}>
             {isBonus ? `Exacto=${ptsExactValue}pts · Signo=${ptsWinnerValue}pt` : `Acierto de signo (1X2)=${ptsWinnerValue}pt`}
           </span>
         </div>
 
-        <div className="flex flex-col items-center gap-1 text-center pt-0.5">
-          <Flag team={displayAway} />
-          <span className="font-semibold text-xs leading-tight line-clamp-2">{displayAway}</span>
+        <div className={cn(
+          'flex flex-col items-center gap-1 text-center rounded-2xl border border-white/10 bg-black/15 py-1.5 px-2',
+          isBonus && 'border-gold/35 bg-gradient-to-b from-[#1e1a0d]/75 to-black/35 shadow-[inset_0_0_0_1px_rgba(212,160,23,0.15)]'
+        )}>
+          <Flag team={displayAway} size="lg" className="w-12 h-12 sm:w-14 sm:h-14 drop-shadow-[0_4px_8px_rgba(0,0,0,0.45)]" />
+          <span className="font-bold text-xs leading-tight line-clamp-2">{displayAway}</span>
         </div>
       </div>
     </div>
