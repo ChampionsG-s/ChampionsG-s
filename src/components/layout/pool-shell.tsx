@@ -58,7 +58,7 @@ export function PoolShell({ pool, membership, username, avatarUrl, children }: P
               <ArrowLeft size={18} />
             </Link>
             <div className="w-8 h-8 rounded-lg bg-white p-0.5 flex-shrink-0">
-              <Image src="/logo.jpg" alt="" width={32} height={32} className="w-full h-full object-contain rounded-md" />
+              <Image src="/logo.png" alt="Champions G's" width={32} height={32} className="w-full h-full object-contain rounded-md" />
             </div>
             <div className="min-w-0">
               <h1 className="font-display text-lg tracking-wide truncate leading-tight">{pool.name}</h1>
