@@ -3,17 +3,19 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/avatar'
-import { Trophy, CalendarDays, Table2, Settings, LogOut, ArrowLeft } from 'lucide-react'
-import type { Pool, PoolMember } from '@/types'
+import { Trophy, CalendarDays, Table2, Settings, LogOut, ArrowLeft, Bell } from 'lucide-react'
+import type { Notification, Pool, PoolMember } from '@/types'
 
 interface PoolShellProps {
   pool: Pool
   membership: PoolMember
   username: string
   avatarUrl?: string | null
+  unreadPersonalCount: number
   children: React.ReactNode
 }
 
@@ -21,14 +23,41 @@ const navItems = (poolId: string, isAdmin: boolean) => [
   { href: `/p/${poolId}/jornadas`, label: 'Jornadas', icon: CalendarDays },
   { href: `/p/${poolId}/clasificacion`, label: 'Clasificación', icon: Table2 },
   { href: `/p/${poolId}/ranking`, label: 'Ranking', icon: Trophy },
+  { href: `/p/${poolId}/actividad`, label: 'Actividad', icon: Bell },
   ...(isAdmin ? [{ href: `/p/${poolId}/admin`, label: 'Admin', icon: Settings }] : []),
 ]
 
-export function PoolShell({ pool, membership, username, avatarUrl, children }: PoolShellProps) {
+export function PoolShell({ pool, membership, username, avatarUrl, unreadPersonalCount, children }: PoolShellProps) {
   const pathname = usePathname()
   const router = useRouter()
+  const [unreadCount, setUnreadCount] = useState(unreadPersonalCount)
 
   const isAdmin = membership.role === 'admin'
+
+  useEffect(() => {
+    setUnreadCount(unreadPersonalCount)
+  }, [unreadPersonalCount])
+
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`nav-notifications-${membership.user_id}`)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${membership.user_id}` },
+        (payload) => {
+          const oldRow = payload.old as Partial<Notification> | undefined
+          const newRow = payload.new as Notification | undefined
+          if (payload.eventType === 'INSERT' && newRow?.scope === 'personal' && !newRow.read_at) {
+            setUnreadCount(count => count + 1)
+          } else if (payload.eventType === 'UPDATE' && newRow?.scope === 'personal' && !oldRow?.read_at && newRow.read_at) {
+            setUnreadCount(count => Math.max(0, count - 1))
+          }
+        }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [membership.user_id])
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -115,7 +144,14 @@ export function PoolShell({ pool, membership, username, avatarUrl, children }: P
                     active ? 'opacity-100' : 'opacity-0'
                   )}
                 />
-                <Icon size={19} strokeWidth={active ? 2.5 : 2} />
+                <span className="relative">
+                  <Icon size={19} strokeWidth={active ? 2.5 : 2} />
+                  {label === 'Actividad' && unreadCount > 0 && (
+                    <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-[3px] rounded-full bg-red-600 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </span>
                 <span>{label}</span>
               </Link>
             )

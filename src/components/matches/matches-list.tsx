@@ -74,6 +74,21 @@ export function MatchesList({
   const getResult = (matchId: string) => results.find(r => r.match_id === matchId)
   const getRealTeams = (matchId: string) => matchTeams.find(mt => mt.match_id === matchId)
 
+  const notifyPredictionSaved = useCallback(async (match: Match, homeScore: number, awayScore: number) => {
+    const displayHome = match.home_team || match.home || '?'
+    const displayAway = match.away_team || match.away || '?'
+    const pick = match.is_bonus ? `${homeScore}–${awayScore}` : signFromScores(homeScore, awayScore)
+    await supabase.from('notifications').upsert({
+      pool_id: poolId,
+      user_id: membership.user_id,
+      scope: 'personal',
+      type: 'prediction_saved',
+      title: 'Apuesta guardada',
+      body: `Guardaste tu apuesta en ${displayHome} vs ${displayAway}: ${pick}.`,
+      dedupe_key: `prediction_saved:${membership.user_id}:${match.id}`,
+    }, { onConflict: 'pool_id,dedupe_key' })
+  }, [supabase, poolId, membership.user_id])
+
   const handlePrediction = useCallback(async (matchId: string, side: 'home_score' | 'away_score', value: string) => {
     const match = matches.find(m => m.id === matchId)
     if (!match || !isJornadaOpen(jornadaForMatch(match))) return
@@ -95,11 +110,13 @@ export function MatchesList({
         home_score: homeScore,
         away_score: awayScore,
       }, { onConflict: 'pool_id,user_id,match_id' })
+
+      await notifyPredictionSaved(match, homeScore, awayScore)
     } catch (err) {
       console.error('Error saving prediction:', err)
       alert('Error al guardar la predicción. Intenta de nuevo.')
     }
-  }, [predictions, poolId, membership.user_id, supabase, matches])
+  }, [predictions, poolId, membership.user_id, supabase, matches, notifyPredictionSaved])
 
   const handleSignPrediction = useCallback(async (matchId: string, sign: MatchSign) => {
     const match = matches.find(m => m.id === matchId)
@@ -120,11 +137,13 @@ export function MatchesList({
         home_score: homeScore,
         away_score: awayScore,
       }, { onConflict: 'pool_id,user_id,match_id' })
+
+      await notifyPredictionSaved(match, homeScore, awayScore)
     } catch (err) {
       console.error('Error saving prediction:', err)
       alert('Error al guardar la predicción. Intenta de nuevo.')
     }
-  }, [predictions, poolId, membership.user_id, supabase, matches])
+  }, [predictions, poolId, membership.user_id, supabase, matches, notifyPredictionSaved])
 
   const visibleMatches = jornada
     ? matches.filter(m => jornadaForMatch(m) === jornada)

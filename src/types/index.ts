@@ -141,6 +141,23 @@ export interface PoolSpainSquadPlayer {
   name: string
 }
 
+export type NotificationScope = 'personal' | 'global'
+
+export interface Notification {
+  id: string
+  pool_id: string
+  user_id: string | null
+  scope: NotificationScope
+  type: string
+  title: string
+  body: string
+  related_match_id: string | null
+  related_user_id: string | null
+  dedupe_key: string
+  created_at: string
+  read_at: string | null
+}
+
 // ─── App types ────────────────────────────────────────────────────────────────
 
 export interface UserScore {

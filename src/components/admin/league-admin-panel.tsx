@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Flag } from '@/components/ui/flag'
 import { allJornadaLabels, jornadaLabelForMatch, jornadaDeadline, isJornadaOpen as computeIsJornadaOpen } from '@/lib/jornada'
+import { scoreMatch } from '@/lib/scoring'
 import type { PoolMember, Match, Result } from '@/types'
 
 interface OpenPhase {
@@ -55,8 +56,21 @@ export function LeagueAdminPanel({
   const handleApprove = async (memberId: string) => {
     setLoading(memberId)
     try {
+      const member = members.find(m => m.id === memberId)
       await supabase.from('pool_members').update({ status: 'approved' }).eq('id', memberId)
-      setMembers(prev => prev.map(member => member.id === memberId ? { ...member, status: 'approved' } : member))
+      setMembers(prev => prev.map(m => m.id === memberId ? { ...m, status: 'approved' } : m))
+
+      if (member) {
+        await supabase.from('notifications').upsert({
+          pool_id: poolId,
+          scope: 'global',
+          type: 'member_joined',
+          title: 'Nuevo miembro',
+          body: `${member.username} se ha unido a la porra.`,
+          related_user_id: member.user_id,
+          dedupe_key: `member_joined:${member.user_id}`,
+        }, { onConflict: 'pool_id,dedupe_key' })
+      }
     } catch (err) {
       console.error('Error approving member:', err)
       alert('Error al aceptar el usuario. Intenta de nuevo.')
@@ -114,9 +128,41 @@ export function LeagueAdminPanel({
         away_score: awayScore,
         source: 'manual',
       }, { onConflict: 'match_id' })
+
+      await notifyPointsEarned(matchId, homeScore, awayScore)
     } catch (err) {
       console.error('Error setting result:', err)
       alert('Error al guardar el resultado. Intenta de nuevo.')
+    }
+  }
+
+  const notifyPointsEarned = async (matchId: string, homeScore: number, awayScore: number) => {
+    const match = matches.find(item => item.id === matchId)
+    if (!match) return
+
+    const { data: preds } = await supabase
+      .from('predictions')
+      .select('pool_id, user_id, home_score, away_score, users(username)')
+      .eq('match_id', matchId)
+    if (!preds) return
+
+    const displayHome = match.home_team || match.home || '?'
+    const displayAway = match.away_team || match.away || '?'
+    const jornadaNum = jornadaLabel(match, matches)
+
+    for (const pred of preds as unknown as Array<{ pool_id: string; user_id: string; home_score: number; away_score: number; users: { username: string } | null }>) {
+      const pts = scoreMatch(pred, { home_score: homeScore, away_score: awayScore }, match)
+      if (pts <= 0) continue
+      await supabase.from('notifications').upsert({
+        pool_id: pred.pool_id,
+        scope: 'global',
+        type: 'points_earned',
+        title: 'Puntos conseguidos',
+        body: `${pred.users?.username ?? 'Un usuario'} consiguió ${pts} pto${pts === 1 ? '' : 's'} en ${displayHome} vs ${displayAway} (${jornadaNum}).`,
+        related_match_id: matchId,
+        related_user_id: pred.user_id,
+        dedupe_key: `points_earned:${matchId}:${pred.user_id}`,
+      }, { onConflict: 'pool_id,dedupe_key' })
     }
   }
 
