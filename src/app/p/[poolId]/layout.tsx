@@ -61,14 +61,25 @@ export default async function PoolLayout({
     )
   }
 
-  const { data: appUser } = await supabase
-    .from('users')
-    .select('username, avatar_url')
-    .eq('id', user.id)
-    .single()
+  const [{ data: appUser }, { count: unreadPersonalCount }] = await Promise.all([
+    supabase.from('users').select('username, avatar_url').eq('id', user.id).single(),
+    supabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('pool_id', poolId)
+      .eq('scope', 'personal')
+      .eq('user_id', user.id)
+      .is('read_at', null),
+  ])
 
   return (
-    <PoolShell pool={pool} membership={membership} username={appUser?.username ?? ''} avatarUrl={appUser?.avatar_url}>
+    <PoolShell
+      pool={pool}
+      membership={membership}
+      username={appUser?.username ?? ''}
+      avatarUrl={appUser?.avatar_url}
+      unreadPersonalCount={unreadPersonalCount ?? 0}
+    >
       {children}
     </PoolShell>
   )
