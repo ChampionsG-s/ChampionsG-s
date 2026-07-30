@@ -551,7 +551,7 @@ as $$
     end)::integer as total
   from public.predictions p
   join public.matches m on m.id = p.match_id and m.jornada = target_jornada
-  left join public.results r on r.match_id = m.id and r.pool_id = p.pool_id
+  left join public.results r on r.match_id = m.id
   join public.pool_members pm on pm.pool_id = p.pool_id and pm.user_id = p.user_id and pm.status = 'approved'
   where p.pool_id = target_pool
   group by p.user_id;
