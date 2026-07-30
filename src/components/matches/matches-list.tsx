@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { Loader2, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { scoreMatch, signFromScores, SIGN_TO_CANONICAL_SCORE, type MatchSign } from '@/lib/scoring'
 import { jornadaLabelForMatch, isJornadaOpen as computeIsJornadaOpen, type OpenPhase } from '@/lib/jornada'
@@ -41,6 +42,8 @@ export function MatchesList({
     return JORNADAS[0]
   })
   const activeTabRef = useRef<HTMLButtonElement | null>(null)
+  const [savingJornada, setSavingJornada] = useState(false)
+  const [savedJornada, setSavedJornada] = useState<string | null>(null)
   const supabase = createClient()
 
   const isAdmin = membership.role === 'admin'
@@ -83,76 +86,33 @@ export function MatchesList({
   const getResult = (matchId: string) => results.find(r => r.match_id === matchId)
   const getRealTeams = (matchId: string) => matchTeams.find(mt => mt.match_id === matchId)
 
-  const notifyPredictionSaved = useCallback(async (match: Match, homeScore: number, awayScore: number) => {
-    const displayHome = match.home_team || match.home || '?'
-    const displayAway = match.away_team || match.away || '?'
-    const pick = match.is_bonus ? `${homeScore}–${awayScore}` : signFromScores(homeScore, awayScore)
-    await supabase.from('notifications').upsert({
-      pool_id: poolId,
-      user_id: membership.user_id,
-      scope: 'personal',
-      type: 'prediction_saved',
-      title: 'Apuesta guardada',
-      body: `Guardaste tu apuesta en ${displayHome} vs ${displayAway}: ${pick}.`,
-      dedupe_key: `prediction_saved:${membership.user_id}:${match.id}`,
-    }, { onConflict: 'pool_id,dedupe_key' })
-  }, [supabase, poolId, membership.user_id])
-
-  const handlePrediction = useCallback(async (matchId: string, side: 'home_score' | 'away_score', value: string) => {
+  const handlePrediction = useCallback((matchId: string, side: 'home_score' | 'away_score', value: string) => {
     const match = matches.find(m => m.id === matchId)
     if (!match || !isJornadaOpen(jornadaForMatch(match))) return
-    try {
-      const num = value === '' ? 0 : Math.min(30, Math.max(0, parseInt(value) || 0))
-      const existing = predictions.find(p => p.match_id === matchId)
-      const homeScore = side === 'home_score' ? num : (existing?.home_score ?? 0)
-      const awayScore = side === 'away_score' ? num : (existing?.away_score ?? 0)
-      const updated = existing
-        ? { ...existing, home_score: homeScore, away_score: awayScore }
-        : { match_id: matchId, pool_id: poolId, user_id: membership.user_id, home_score: homeScore, away_score: awayScore }
+    const num = value === '' ? 0 : Math.min(30, Math.max(0, parseInt(value) || 0))
+    const existing = predictions.find(p => p.match_id === matchId)
+    const homeScore = side === 'home_score' ? num : (existing?.home_score ?? 0)
+    const awayScore = side === 'away_score' ? num : (existing?.away_score ?? 0)
+    const updated = existing
+      ? { ...existing, home_score: homeScore, away_score: awayScore }
+      : { match_id: matchId, pool_id: poolId, user_id: membership.user_id, home_score: homeScore, away_score: awayScore }
 
-      setPredictions(prev => [...prev.filter(p => p.match_id !== matchId), updated as Prediction])
+    setPredictions(prev => [...prev.filter(p => p.match_id !== matchId), updated as Prediction])
+    setSavedJornada(null)
+  }, [predictions, poolId, membership.user_id, matches])
 
-      await supabase.from('predictions').upsert({
-        pool_id: poolId,
-        user_id: membership.user_id,
-        match_id: matchId,
-        home_score: homeScore,
-        away_score: awayScore,
-      }, { onConflict: 'pool_id,user_id,match_id' })
-
-      await notifyPredictionSaved(match, homeScore, awayScore)
-    } catch (err) {
-      console.error('Error saving prediction:', err)
-      alert('Error al guardar la predicción. Intenta de nuevo.')
-    }
-  }, [predictions, poolId, membership.user_id, supabase, matches, notifyPredictionSaved])
-
-  const handleSignPrediction = useCallback(async (matchId: string, sign: MatchSign) => {
+  const handleSignPrediction = useCallback((matchId: string, sign: MatchSign) => {
     const match = matches.find(m => m.id === matchId)
     if (!match || !isJornadaOpen(jornadaForMatch(match))) return
-    try {
-      const { home_score: homeScore, away_score: awayScore } = SIGN_TO_CANONICAL_SCORE[sign]
-      const existing = predictions.find(p => p.match_id === matchId)
-      const updated = existing
-        ? { ...existing, home_score: homeScore, away_score: awayScore }
-        : { match_id: matchId, pool_id: poolId, user_id: membership.user_id, home_score: homeScore, away_score: awayScore }
+    const { home_score: homeScore, away_score: awayScore } = SIGN_TO_CANONICAL_SCORE[sign]
+    const existing = predictions.find(p => p.match_id === matchId)
+    const updated = existing
+      ? { ...existing, home_score: homeScore, away_score: awayScore }
+      : { match_id: matchId, pool_id: poolId, user_id: membership.user_id, home_score: homeScore, away_score: awayScore }
 
-      setPredictions(prev => [...prev.filter(p => p.match_id !== matchId), updated as Prediction])
-
-      await supabase.from('predictions').upsert({
-        pool_id: poolId,
-        user_id: membership.user_id,
-        match_id: matchId,
-        home_score: homeScore,
-        away_score: awayScore,
-      }, { onConflict: 'pool_id,user_id,match_id' })
-
-      await notifyPredictionSaved(match, homeScore, awayScore)
-    } catch (err) {
-      console.error('Error saving prediction:', err)
-      alert('Error al guardar la predicción. Intenta de nuevo.')
-    }
-  }, [predictions, poolId, membership.user_id, supabase, matches, notifyPredictionSaved])
+    setPredictions(prev => [...prev.filter(p => p.match_id !== matchId), updated as Prediction])
+    setSavedJornada(null)
+  }, [predictions, poolId, membership.user_id, matches])
 
   const visibleMatches = jornada
     ? matches.filter(m => jornadaForMatch(m) === jornada)
@@ -160,6 +120,46 @@ export function MatchesList({
 
   const currentJornada = jornada || jornadas[0]
   const currentOpen = isJornadaOpen(currentJornada)
+  const bettableMatches = visibleMatches.filter(m => !getResult(m.id))
+  const allBetsFilled = bettableMatches.length > 0 && bettableMatches.every(m => getPred(m.id))
+
+  const handleSaveBets = useCallback(async () => {
+    const toSave = bettableMatches
+      .map(m => predictions.find(p => p.match_id === m.id))
+      .filter((p): p is Prediction => !!p)
+
+    if (toSave.length === 0) return
+
+    setSavingJornada(true)
+    try {
+      await Promise.all(toSave.map(p =>
+        supabase.from('predictions').upsert({
+          pool_id: poolId,
+          user_id: membership.user_id,
+          match_id: p.match_id,
+          home_score: p.home_score,
+          away_score: p.away_score,
+        }, { onConflict: 'pool_id,user_id,match_id' })
+      ))
+
+      await supabase.from('notifications').upsert({
+        pool_id: poolId,
+        user_id: membership.user_id,
+        scope: 'personal',
+        type: 'prediction_saved',
+        title: 'Apuestas guardadas',
+        body: `Guardaste tus apuestas de ${currentJornada} (${toSave.length} partido${toSave.length !== 1 ? 's' : ''}).`,
+        dedupe_key: `prediction_saved:${membership.user_id}:${currentJornada}:${Date.now()}`,
+      }, { onConflict: 'pool_id,dedupe_key' })
+
+      setSavedJornada(currentJornada)
+    } catch (err) {
+      console.error('Error saving bets:', err)
+      alert('Error al guardar las apuestas. Intenta de nuevo.')
+    } finally {
+      setSavingJornada(false)
+    }
+  }, [bettableMatches, predictions, supabase, poolId, membership.user_id, currentJornada])
 
   useEffect(() => {
     activeTabRef.current?.scrollIntoView({ inline: 'start', block: 'nearest' })
@@ -228,6 +228,46 @@ export function MatchesList({
           />
         ))}
       </div>
+
+      {currentOpen && bettableMatches.length > 0 && (
+        <div className="pt-1">
+          <button
+            type="button"
+            disabled={!allBetsFilled || savingJornada}
+            onClick={handleSaveBets}
+            className={cn(
+              'relative w-full overflow-hidden rounded-2xl py-3.5 font-display text-xl tracking-[0.15em] transition-all duration-300 border',
+              allBetsFilled && !savingJornada
+                ? 'bg-gradient-to-b from-gold-2 to-gold border-gold text-background shadow-[0_10px_30px_rgba(212,160,23,0.4)] active:scale-[0.98]'
+                : 'bg-surface border-border text-muted cursor-not-allowed opacity-60'
+            )}
+          >
+            {allBetsFilled && !savingJornada && (
+              <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+            )}
+            <span className="flex items-center justify-center gap-2">
+              {savingJornada ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  GUARDANDO...
+                </>
+              ) : savedJornada === currentJornada ? (
+                <>
+                  <Check size={20} strokeWidth={3} />
+                  ¡APOSTADO!
+                </>
+              ) : (
+                'BET'
+              )}
+            </span>
+          </button>
+          {!allBetsFilled && !savingJornada && savedJornada !== currentJornada && (
+            <p className="text-center text-[11px] text-muted mt-1.5">
+              Completa un pronóstico en cada partido para poder apostar
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )
 }
