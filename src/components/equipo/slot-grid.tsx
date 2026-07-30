@@ -12,9 +12,10 @@ interface SlotGridProps {
   renderFooter: (entry: EquipoEntry) => React.ReactNode
   draggable?: boolean
   onDropEntry?: (draggedRosterId: string, targetEntry: EquipoEntry | null) => void
+  onCardClick?: (entry: EquipoEntry) => void
 }
 
-export function SlotGrid({ count, items, emptyLabel, renderFooter, draggable, onDropEntry }: SlotGridProps) {
+export function SlotGrid({ count, items, emptyLabel, renderFooter, draggable, onDropEntry, onCardClick }: SlotGridProps) {
   const handleDragStart = (e: React.DragEvent, rosterId: string) => {
     e.dataTransfer.setData('text/plain', rosterId)
     e.dataTransfer.effectAllowed = 'move'
@@ -57,9 +58,11 @@ export function SlotGrid({ count, items, emptyLabel, renderFooter, draggable, on
             onDragStart={draggable ? (e) => handleDragStart(e, entry.roster.id) : undefined}
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, entry)}
+            onClick={onCardClick ? () => onCardClick(entry) : undefined}
             className={cn(
               'w-[76px] flex flex-col items-center gap-1 rounded-xl border border-gold/50 bg-black/40 backdrop-blur-[1px] p-1.5 shadow-[0_6px_16px_rgba(0,0,0,0.4)]',
-              draggable && 'cursor-grab active:cursor-grabbing'
+              draggable && 'cursor-grab active:cursor-grabbing',
+              onCardClick && 'cursor-pointer hover:border-gold transition-colors'
             )}
           >
             <PlayerPhoto name={player.name} photoUrl={player.photo_url} heroPhotoUrl={player.hero_photo_url} size="md" />
