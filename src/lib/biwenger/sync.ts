@@ -16,6 +16,9 @@ export async function syncBiwengerPlayers(admin: SupabaseClient): Promise<{ sync
     const biwengerTeamName = teamNameById.get(p.teamID)
     const teamName = biwengerTeamName ? BIWENGER_TEAM_MAP[biwengerTeamName] : undefined
     if (!teamName) return []
+    // La API tambien devuelve entrenadores (position 5) y otras entradas que
+    // no son jugadores de campo; biwenger_players.position solo admite 1-4.
+    if (p.position < 1 || p.position > 4) return []
 
     return [{
       id: p.id,
