@@ -48,7 +48,7 @@ export function PlayerCard({ listing, player, highestBid, myBid, balance, squadF
 
   const handleDirectBuy = async () => {
     if (squadFull) {
-      alert('Tu plantilla ya tiene 5 jugadores')
+      alert('Tu plantilla ya tiene 8 jugadores (5 titulares + 3 banquillo)')
       return
     }
     if (!confirm(`¿Fichar a ${player.name} por ${listing.direct_buy_price.toLocaleString('es-ES')} monedas?`)) return

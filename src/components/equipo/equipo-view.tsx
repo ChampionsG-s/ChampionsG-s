@@ -16,6 +16,7 @@ import type {
 type Tab = 'market' | 'squad'
 
 interface EquipoViewProps {
+  poolId: string
   currentUserId: string
   wallet: EquipoWallet | null
   cycle: EquipoMarketCycle | null
@@ -25,7 +26,7 @@ interface EquipoViewProps {
   players: EquipoPlayer[]
 }
 
-export function EquipoView({ currentUserId, wallet, cycle, listings, bids, roster, players }: EquipoViewProps) {
+export function EquipoView({ poolId, currentUserId, wallet, cycle, listings, bids, roster, players }: EquipoViewProps) {
   const [tab, setTab] = useState<Tab>('market')
   const playersById = new Map(players.map(p => [p.id, p]))
   const myRoster = roster.filter(r => r.user_id === currentUserId)
@@ -42,7 +43,7 @@ export function EquipoView({ currentUserId, wallet, cycle, listings, bids, roste
           </div>
           <div className="text-right">
             <p className="text-[10px] text-muted uppercase tracking-wide font-bold">Plantilla</p>
-            <p className="font-display text-2xl text-cream">{ownedCount}/5</p>
+            <p className="font-display text-2xl text-cream">{ownedCount}/8</p>
           </div>
         </div>
       </div>
@@ -72,11 +73,11 @@ export function EquipoView({ currentUserId, wallet, cycle, listings, bids, roste
           bids={bids}
           playersById={playersById}
           wallet={wallet}
-          squadFull={ownedCount >= 5}
+          squadFull={ownedCount >= 8}
           cycle={cycle}
         />
       ) : (
-        <SquadView roster={myRoster} playersById={playersById} />
+        <SquadView poolId={poolId} roster={myRoster} playersById={playersById} wallet={wallet} />
       )}
     </div>
   )

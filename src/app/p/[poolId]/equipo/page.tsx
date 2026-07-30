@@ -67,6 +67,7 @@ export default async function EquipoPage({
 
   return (
     <EquipoView
+      poolId={poolId}
       currentUserId={user!.id}
       wallet={wallet as EquipoWallet | null}
       cycle={cycleRes.data}

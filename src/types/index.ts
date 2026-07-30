@@ -176,11 +176,14 @@ export interface EquipoPlayer {
   synced_at: string
 }
 
+export type EquipoFormation = '1-2-2' | '2-1-2'
+
 export interface EquipoWallet {
   id: string
   pool_id: string
   user_id: string
   balance: number
+  formation: EquipoFormation
   updated_at: string
 }
 
@@ -239,7 +242,7 @@ export interface EquipoBid {
   updated_at: string
 }
 
-export type EquipoAcquiredVia = 'auction' | 'direct_buy'
+export type EquipoAcquiredVia = 'auction' | 'direct_buy' | 'starter'
 
 export interface EquipoRoster {
   id: string
