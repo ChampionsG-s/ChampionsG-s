@@ -1,8 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { scoreMatch, signFromScores } from '@/lib/scoring'
-import { allJornadaLabels, jornadaLabelForMatch, isJornadaOpen } from '@/lib/jornada'
+import { jornadaLabelForMatch, isJornadaOpen } from '@/lib/jornada'
+import { JORNADAS } from '@/lib/data/matches'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/avatar'
 import { Flag } from '@/components/ui/flag'
@@ -18,8 +19,20 @@ interface RankingJornadaViewProps {
 const medals = ['🥇', '🥈', '🥉']
 
 export function RankingJornadaView({ members, matches, results, predictions }: RankingJornadaViewProps) {
-  const jornadas = useMemo(() => allJornadaLabels(matches), [matches])
-  const [selected, setSelected] = useState(jornadas[0] ?? '')
+  const jornadas = JORNADAS
+  const [selected, setSelected] = useState<string>(() => {
+    const firstOpen = jornadas.find(label => isJornadaOpen(matches, label))
+    if (firstOpen) return firstOpen
+    for (let i = jornadas.length - 1; i >= 0; i--) {
+      if (matches.some(m => jornadaLabelForMatch(m, matches) === jornadas[i])) return jornadas[i]
+    }
+    return jornadas[0]
+  })
+  const activeTabRef = useRef<HTMLButtonElement | null>(null)
+
+  useEffect(() => {
+    activeTabRef.current?.scrollIntoView({ inline: 'start', block: 'nearest' })
+  }, [])
 
   const currentJornada = selected || jornadas[0] || ''
   // Las apuestas de una jornada solo se revelan una vez que ha cerrado
@@ -53,22 +66,23 @@ export function RankingJornadaView({ members, matches, results, predictions }: R
       <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 py-0.5 snap-x scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {jornadas.map(label => {
           const isOpen = isJornadaOpen(matches, label)
-          const num = label.match(/^Jornada (\d+)$/)?.[1] ?? label
           const active = currentJornada === label
           return (
             <button
               key={label}
+              ref={active ? activeTabRef : undefined}
               onClick={() => setSelected(label)}
+              title={label}
               className={cn(
-                'snap-start flex-shrink-0 px-3.5 py-2 rounded-full text-xs font-bold transition-all',
+                'snap-start flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-full text-xs font-bold transition-all',
                 active
                   ? 'bg-gradient-to-b from-gold-2 to-gold text-background shadow-md shadow-gold/20'
                   : isOpen
                     ? 'border border-border text-muted hover:border-gold hover:text-gold'
-                    : 'border border-border text-border cursor-not-allowed opacity-50'
+                    : 'border border-orange-950 bg-orange-950/70 text-orange-800 cursor-not-allowed'
               )}
             >
-              {num} {!isOpen && '🔒'}
+              {label} {!isOpen && '🔒'}
             </button>
           )
         })}

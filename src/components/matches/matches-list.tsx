@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { scoreMatch, signFromScores, SIGN_TO_CANONICAL_SCORE, type MatchSign } from '@/lib/scoring'
-import { allJornadaLabels, jornadaLabelForMatch, isJornadaOpen as computeIsJornadaOpen, type OpenPhase } from '@/lib/jornada'
+import { jornadaLabelForMatch, isJornadaOpen as computeIsJornadaOpen, type OpenPhase } from '@/lib/jornada'
+import { JORNADAS } from '@/lib/data/matches'
 import { Flag } from '@/components/ui/flag'
 import { cn } from '@/lib/utils'
 import type { Match, Result, Prediction, PoolMember, PoolMatchTeams } from '@/types'
@@ -31,7 +32,15 @@ export function MatchesList({
   const [predictions, setPredictions] = useState<Prediction[]>(initialPredictions)
   const [openPhases, setOpenPhases] = useState<OpenPhase[]>(initialOpenPhases)
   const [matchTeams, setMatchTeams] = useState<PoolMatchTeams[]>(initialMatchTeams)
-  const [jornada, setJornada] = useState<string>('')
+  const [jornada, setJornada] = useState<string>(() => {
+    const firstOpen = JORNADAS.find(label => computeIsJornadaOpen(matches, label, initialOpenPhases))
+    if (firstOpen) return firstOpen
+    for (let i = JORNADAS.length - 1; i >= 0; i--) {
+      if (matches.some(m => jornadaLabelForMatch(m, matches) === JORNADAS[i])) return JORNADAS[i]
+    }
+    return JORNADAS[0]
+  })
+  const activeTabRef = useRef<HTMLButtonElement | null>(null)
   const supabase = createClient()
 
   const isAdmin = membership.role === 'admin'
@@ -68,7 +77,7 @@ export function MatchesList({
   }, [supabase, poolId])
 
   const jornadaForMatch = (match: Match) => jornadaLabelForMatch(match, matches)
-  const jornadas = useMemo(() => allJornadaLabels(matches), [matches])
+  const jornadas = JORNADAS
   const isJornadaOpen = (label: string) => computeIsJornadaOpen(matches, label, openPhases)
   const getPred = (matchId: string) => predictions.find(p => p.match_id === matchId)
   const getResult = (matchId: string) => results.find(r => r.match_id === matchId)
@@ -152,6 +161,10 @@ export function MatchesList({
   const currentJornada = jornada || jornadas[0]
   const currentOpen = isJornadaOpen(currentJornada)
 
+  useEffect(() => {
+    activeTabRef.current?.scrollIntoView({ inline: 'start', block: 'nearest' })
+  }, [])
+
   return (
     <div className="space-y-4">
       <div
@@ -174,22 +187,22 @@ export function MatchesList({
         {jornadas.map((label) => {
           const open = isJornadaOpen(label)
           const active = currentJornada === label
-          const shortLabel = label.match(/^Jornada (\d+)$/)?.[1] ?? label
           return (
             <button
               key={label}
+              ref={active ? activeTabRef : undefined}
               onClick={() => setJornada(label)}
               title={label}
               className={cn(
-                'snap-start flex-shrink-0 px-3.5 py-2 rounded-full text-xs font-bold transition-all',
+                'snap-start flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-full text-xs font-bold transition-all',
                 active
                   ? 'bg-gradient-to-b from-gold-2 to-gold text-background shadow-md shadow-gold/20'
                   : open
                     ? 'border border-border text-muted hover:border-gold hover:text-gold'
-                    : 'border border-border text-border cursor-not-allowed opacity-50'
+                    : 'border border-orange-950 bg-orange-950/70 text-orange-800 cursor-not-allowed'
               )}
             >
-              {shortLabel} {!open && '🔒'}
+              {label} {!open && '🔒'}
             </button>
           )
         })}
@@ -246,7 +259,7 @@ function MatchCard({ match, realTeams, pred, result, isLocked, onPred, onSignPre
   const isFullHit = pts !== null && (isBonus ? pts === ptsExactValue : pts > 0)
 
   const cardClass = cn(
-    'relative overflow-hidden rounded-2xl border px-4 sm:px-5 py-2.5 sm:py-3 shadow-[0_12px_30px_rgba(0,0,0,0.35)] transition-all duration-300',
+    'relative overflow-hidden rounded-2xl border px-2.5 sm:px-5 py-2.5 sm:py-3 shadow-[0_12px_30px_rgba(0,0,0,0.35)] transition-all duration-300',
     isBonus
       ? 'border-gold/60 bg-[linear-gradient(160deg,rgba(212,160,23,0.20),rgba(10,14,24,0.92)_35%,rgba(7,11,22,0.95)_100%)]'
       : 'border-slate-700/80 bg-[linear-gradient(155deg,rgba(29,47,83,0.42),rgba(10,15,30,0.95)_45%,rgba(7,11,22,0.95)_100%)]',
@@ -290,17 +303,17 @@ function MatchCard({ match, realTeams, pred, result, isLocked, onPred, onSignPre
         )}
       </div>
 
-      <div className="relative grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+      <div className="relative grid grid-cols-[1fr_auto_1fr] items-center gap-1 sm:gap-2">
         <div className={cn(
-          'flex flex-col items-center gap-1 text-center rounded-2xl border border-white/10 bg-black/15 py-1.5 px-2',
+          'flex flex-col items-center gap-1 text-center rounded-2xl border border-white/10 bg-black/15 py-1.5 px-1 sm:px-2',
           isBonus && 'border-gold/35 bg-gradient-to-b from-[#1e1a0d]/75 to-black/35 shadow-[inset_0_0_0_1px_rgba(212,160,23,0.15)]'
         )}>
-          <Flag team={displayHome} size="lg" className="w-12 h-12 sm:w-14 sm:h-14 drop-shadow-[0_4px_8px_rgba(0,0,0,0.45)]" />
+          <Flag team={displayHome} size="lg" className="w-11 h-11 sm:w-14 sm:h-14 drop-shadow-[0_4px_8px_rgba(0,0,0,0.45)]" />
           <span className="font-bold text-xs leading-tight line-clamp-2">{displayHome}</span>
         </div>
 
         <div className={cn(
-          'flex flex-col items-center gap-1 min-w-[116px] rounded-2xl border border-white/12 bg-black/30 px-2.5 py-1.5 backdrop-blur-[1px]',
+          'flex flex-col items-center gap-1 min-w-[96px] sm:min-w-[116px] rounded-2xl border border-white/12 bg-black/30 px-1.5 sm:px-2.5 py-1.5 backdrop-blur-[1px]',
           isBonus && 'border-gold/40 bg-gradient-to-b from-[#2c220e]/85 to-[#0c0f17]/85 shadow-[inset_0_0_0_1px_rgba(212,160,23,0.24)]'
         )}>
           {hasResult && (
@@ -336,10 +349,10 @@ function MatchCard({ match, realTeams, pred, result, isLocked, onPred, onSignPre
         </div>
 
         <div className={cn(
-          'flex flex-col items-center gap-1 text-center rounded-2xl border border-white/10 bg-black/15 py-1.5 px-2',
+          'flex flex-col items-center gap-1 text-center rounded-2xl border border-white/10 bg-black/15 py-1.5 px-1 sm:px-2',
           isBonus && 'border-gold/35 bg-gradient-to-b from-[#1e1a0d]/75 to-black/35 shadow-[inset_0_0_0_1px_rgba(212,160,23,0.15)]'
         )}>
-          <Flag team={displayAway} size="lg" className="w-12 h-12 sm:w-14 sm:h-14 drop-shadow-[0_4px_8px_rgba(0,0,0,0.45)]" />
+          <Flag team={displayAway} size="lg" className="w-11 h-11 sm:w-14 sm:h-14 drop-shadow-[0_4px_8px_rgba(0,0,0,0.45)]" />
           <span className="font-bold text-xs leading-tight line-clamp-2">{displayAway}</span>
         </div>
       </div>
@@ -364,7 +377,7 @@ function SignSelector({ value, disabled, onChange }: SignSelectorProps) {
           disabled={disabled}
           onClick={() => onChange(sign)}
           className={cn(
-            'w-10 h-10 rounded-xl font-black text-sm transition-all border active:scale-95',
+            'w-9 h-9 sm:w-10 sm:h-10 rounded-xl font-black text-sm transition-all border active:scale-95',
             value === sign
               ? 'bg-gradient-to-b from-gold-2 to-gold border-gold text-background shadow-sm shadow-gold/30'
               : 'bg-surface border-border text-cream hover:border-gold',
@@ -405,7 +418,7 @@ function ScoreInput({ value, disabled, onChange, adminStyle }: ScoreInputProps) 
       onChange={(e) => setLocalValue(e.target.value)}
       onBlur={(e) => onChange(e.target.value)}
       className={cn(
-        'w-10 h-10 text-center rounded-xl font-black text-lg outline-none transition-colors',
+        'w-9 h-9 sm:w-10 sm:h-10 text-center rounded-xl font-black text-lg outline-none transition-colors',
         adminStyle
           ? 'bg-red-950 border border-red-800 text-red-300 w-8 h-8 text-sm'
           : 'bg-surface border border-border text-cream focus:border-gold focus:ring-2 focus:ring-gold/20 disabled:opacity-35 disabled:cursor-not-allowed'

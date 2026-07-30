@@ -121,7 +121,7 @@ export default function LoginPage() {
         showForm ? 'opacity-100' : 'opacity-0 pointer-events-none'
       )}>
         <div className="text-center mb-8">
-          <h1 className="text-7xl font-black tracking-tight text-cream drop-shadow-lg" style={{ fontFamily: 'var(--font-playfair)' }}>
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-cream drop-shadow-lg whitespace-nowrap" style={{ fontFamily: 'var(--font-playfair)' }}>
             Champions<span className="text-gold">G's</span>
           </h1>
           <p className="text-cream text-sm mt-2 drop-shadow-lg">Crea o únete a tu quiniela de Liga</p>

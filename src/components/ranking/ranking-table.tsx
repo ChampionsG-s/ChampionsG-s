@@ -16,6 +16,33 @@ interface RankingTableProps {
   currentUserId: string
 }
 
+const PODIUM_STYLE = {
+  1: {
+    label: 'ORO',
+    ring: 'border-gold',
+    card: 'border-gold shadow-[0_0_24px_rgba(212,160,23,0.45)]',
+    badge: 'bg-gold text-background',
+    labelClass: 'bg-gold/15 text-gold border-gold/40',
+    pts: 'text-gold',
+  },
+  2: {
+    label: 'PLATA',
+    ring: 'border-slate-300',
+    card: 'border-slate-300/70 shadow-[0_8px_22px_rgba(0,0,0,0.4)]',
+    badge: 'bg-slate-300 text-background',
+    labelClass: 'bg-slate-300/15 text-slate-200 border-slate-300/30',
+    pts: 'text-cream',
+  },
+  3: {
+    label: 'BRONCE',
+    ring: 'border-orange-700',
+    card: 'border-orange-700/70 shadow-[0_8px_22px_rgba(0,0,0,0.4)]',
+    badge: 'bg-orange-700 text-cream',
+    labelClass: 'bg-orange-700/15 text-orange-300 border-orange-700/30',
+    pts: 'text-cream',
+  },
+} as const
+
 export function RankingTable({
   poolId,
   members,
@@ -60,33 +87,94 @@ export function RankingTable({
       .sort((a, b) => b.total - a.total)
   }, [members, predictions, resultsMap, matches])
 
-  const medals = ['🥇', '🥈', '🥉']
+  const top3 = ranking.slice(0, 3)
+  const rest = ranking.slice(3)
 
   return (
     <div className="space-y-4">
-      <div className="card !p-0 overflow-hidden">
-        <h2 className="font-display text-2xl tracking-wide text-gold px-4 pt-4 pb-3">🏆 RANKING</h2>
+      <h2 className="font-display text-2xl tracking-wide text-gold px-1">Ranking</h2>
 
-        {ranking.length === 0 ? (
-          <p className="text-muted text-sm px-4 pb-4">Sin jugadores aún.</p>
-        ) : (
-          <div className="divide-y divide-border/60">
-            {ranking.map((entry, i) => {
-              const isMe = entry.member.user_id === currentUserId
-              const top3 = i < 3
+      {ranking.length === 0 && (
+        <p className="text-muted text-sm px-1">Sin jugadores aún.</p>
+      )}
+
+      {top3.length > 0 && (
+        <div className="relative overflow-hidden rounded-2xl border border-gold/45 shadow-[0_12px_30px_rgba(0,0,0,0.35)]">
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+          >
+            <source src="/videos/shield-celebration.mp4" type="video/mp4" />
+          </video>
+          <div aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,11,22,0.55),rgba(7,11,22,0.82)_65%,rgba(7,11,22,0.95)_100%)]" />
+
+          <div className="relative flex items-end justify-center gap-2.5 sm:gap-4 px-3 sm:px-8 pt-8 pb-4">
+            {[1, 0, 2].map((idx) => {
+              const entry = top3[idx]
+              const place = (idx + 1) as 1 | 2 | 3
+
+              if (!entry) return <div key={place} className="flex-1 max-w-[130px]" />
+
+              const style = PODIUM_STYLE[place]
+              const isFirst = place === 1
+
               return (
                 <div
                   key={entry.member.id}
                   className={cn(
-                    'flex items-center gap-3 px-4 py-3 transition-colors',
-                    isMe && 'bg-gold/[0.06]',
-                    top3 && 'bg-gradient-to-r from-gold/[0.04] to-transparent'
+                    'relative flex-1 max-w-[130px] flex flex-col items-center rounded-2xl border-2 bg-black/45 backdrop-blur-[2px] px-2 sm:px-3 pb-3',
+                    style.card,
+                    isFirst ? 'pt-9 -translate-y-2' : 'pt-8'
                   )}
                 >
+                  <div className={cn('absolute -top-6 left-1/2 -translate-x-1/2 rounded-full border-[3px] bg-surface-2 p-0.5', style.ring)}>
+                    <Avatar
+                      username={entry.member.username}
+                      avatarUrl={entry.member.avatar_url}
+                      size={isFirst ? 'lg' : 'md'}
+                    />
+                    <span
+                      className={cn(
+                        'absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black',
+                        style.badge
+                      )}
+                    >
+                      {place}
+                    </span>
+                  </div>
+                  <div className="mt-2 text-xs sm:text-sm font-bold text-cream text-center truncate max-w-full">
+                    {entry.member.username}
+                  </div>
+                  <span className={cn('mt-1.5 text-[9px] font-bold px-2 py-0.5 rounded-full border', style.labelClass)}>
+                    {style.label}
+                  </span>
+                  <div className={cn('mt-1.5 font-display text-xl tracking-wide leading-none', isFirst && 'text-2xl', style.pts)}>
+                    {entry.total} <span className="text-[10px] font-sans text-muted">pts</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {rest.length > 0 && (
+        <div className="card !p-0 overflow-hidden">
+          <p className="text-[11px] text-muted uppercase tracking-wide px-4 pt-3 pb-1">Puestos 4 en adelante</p>
+          <div className="divide-y divide-border/60">
+            {rest.map((entry, i) => {
+              const pos = i + 4
+              const isMe = entry.member.user_id === currentUserId
+              return (
+                <div
+                  key={entry.member.id}
+                  className={cn('flex items-center gap-3 px-4 py-3 transition-colors', isMe && 'bg-gold/[0.06]')}
+                >
                   <div className="w-7 text-center flex-shrink-0">
-                    {medals[i]
-                      ? <span className="text-lg leading-none">{medals[i]}</span>
-                      : <span className="text-muted font-bold text-sm">{i + 1}</span>}
+                    <span className="text-muted font-bold text-sm">{pos}</span>
                   </div>
                   <Avatar username={entry.member.username} avatarUrl={entry.member.avatar_url} size="md" />
                   <div className="min-w-0 flex-1">
@@ -101,8 +189,8 @@ export function RankingTable({
               )
             })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="card">
         <h3 className="font-bold text-sm text-gold mb-3">Sistema de puntos</h3>
