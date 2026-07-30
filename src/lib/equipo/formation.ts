@@ -8,6 +8,7 @@ export const FORMATIONS: Record<EquipoFormation, { def: number; med: number; del
 export const BENCH_SIZE = 3
 export const SELL_RATIO = 0.65
 export const POACH_JORNADAS_REQUIRED = 2
+export const DIRECT_BUY_MIN_PRICE = 700
 
 export type EquipoEntry = { roster: EquipoRoster; player: EquipoPlayer }
 
@@ -20,10 +21,9 @@ export interface FormationSlots {
 }
 
 // Reparte los jugadores en propiedad de un usuario en el once (portero +
-// lineas segun la formacion elegida) y el banquillo. El once siempre se
-// llena con los jugadores mejor valorados de cada posicion (mayor
-// coin_price), asi que fichar un jugador mejor lo mete automaticamente de
-// titular y manda al peor al banquillo.
+// lineas segun la formacion elegida) y el banquillo, segun la eleccion
+// EXPLICITA del usuario (is_starter, movida por drag & drop) — ya no se
+// calcula automaticamente por precio.
 export function splitFormation(
   roster: EquipoRoster[],
   playersById: Map<number, EquipoPlayer>,
@@ -36,33 +36,29 @@ export function splitFormation(
     .map(r => ({ roster: r, player: playersById.get(r.player_id) }))
     .filter((x): x is EquipoEntry => !!x.player)
 
-  const byPos = (pos: number) =>
-    withPlayer.filter(x => x.player.position === pos).sort((a, b) => b.player.coin_price - a.player.coin_price)
+  const byPos = (pos: number) => withPlayer.filter(x => x.player.position === pos)
+  const isStarter = (e: EquipoEntry) => e.roster.is_starter
 
   const gks = byPos(1)
   const defs = byPos(2)
   const meds = byPos(3)
   const dels = byPos(4)
 
-  const starterIds = new Set([
-    ...gks.slice(0, 1).map(x => x.roster.id),
-    ...defs.slice(0, shape.def).map(x => x.roster.id),
-    ...meds.slice(0, shape.med).map(x => x.roster.id),
-    ...dels.slice(0, shape.del).map(x => x.roster.id),
-  ])
+  const starterGk = gks.filter(isStarter).slice(0, 1)
+  const starterDef = defs.filter(isStarter).slice(0, shape.def)
+  const starterMed = meds.filter(isStarter).slice(0, shape.med)
+  const starterDel = dels.filter(isStarter).slice(0, shape.del)
+
+  const starterIds = new Set([...starterGk, ...starterDef, ...starterMed, ...starterDel].map(x => x.roster.id))
   const bench = withPlayer.filter(x => !starterIds.has(x.roster.id))
 
-  return {
-    gk: gks.slice(0, 1),
-    def: defs.slice(0, shape.def),
-    med: meds.slice(0, shape.med),
-    del: dels.slice(0, shape.del),
-    bench,
-  }
+  return { gk: starterGk, def: starterDef, med: starterMed, del: starterDel, bench }
 }
 
+// Precio de "compra ya"/fichaje directo: minimo 700, aunque el jugador sea
+// muy barato (los baratos son justo los que puntuan poco por jugar poco).
 export function poachPrice(coinPrice: number): number {
-  return Math.max(coinPrice + 10, Math.round((coinPrice * 1.5) / 10) * 10)
+  return Math.max(DIRECT_BUY_MIN_PRICE, Math.round((coinPrice * 1.5) / 10) * 10)
 }
 
 export function jornadasUntilPoachable(acquiredJornada: number, currentJornada: number): number {

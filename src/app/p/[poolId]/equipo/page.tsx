@@ -59,9 +59,22 @@ export default async function EquipoPage({
 
   const currentJornada = closedJornadaNums[0] ?? 0
 
-  const [membersRes, usersRes, walletsRes, cycleRes, listingsRes, bidsRes, rosterRes, playersRes] = await Promise.all([
+  const [membersRes, usersRes] = await Promise.all([
     supabase.from('pool_members').select('*').eq('pool_id', poolId).eq('status', 'approved'),
     supabase.from('users').select('*'),
+  ])
+
+  // Si quien mira la pagina es admin del pool, rellena de un tiron la
+  // wallet + plantilla inicial de cualquier miembro que aun no la tenga
+  // (para poder probar el fichaje entre jugadores sin que cada uno tenga
+  // que entrar antes a Equipo). Idempotente: no toca a quien ya la tiene.
+  const isAdmin = membersRes.data?.some(m => m.user_id === user!.id && m.role === 'admin') ?? false
+  if (isAdmin) {
+    const { error } = await supabase.rpc('equipo_seed_all_members', { target_pool: poolId })
+    if (error) console.error('Error rellenando plantillas del pool:', error)
+  }
+
+  const [walletsRes, cycleRes, listingsRes, bidsRes, rosterRes, playersRes] = await Promise.all([
     supabase.from('equipo_wallets').select('*').eq('pool_id', poolId),
     supabase.from('equipo_market_cycles').select('*').eq('pool_id', poolId).is('resolved_at', null).maybeSingle(),
     supabase.from('equipo_market_listings').select('*').eq('pool_id', poolId).eq('status', 'open'),
