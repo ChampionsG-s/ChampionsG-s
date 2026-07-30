@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/avatar'
-import { Trophy, CalendarDays, ListOrdered, Settings, LogOut, Bell } from 'lucide-react'
+import { Trophy, CalendarDays, ListOrdered, Settings, LogOut, Bell, Shirt } from 'lucide-react'
 import type { Notification, Pool, PoolMember } from '@/types'
 
 interface PoolShellProps {
@@ -23,6 +23,7 @@ const navItems = (poolId: string, isAdmin: boolean) => [
   { href: `/p/${poolId}/jornadas`, label: 'Jornadas', icon: CalendarDays },
   { href: `/p/${poolId}/clasificacion`, label: 'Clasificación', icon: ListOrdered },
   { href: `/p/${poolId}/ranking`, label: 'Ranking', icon: Trophy },
+  { href: `/p/${poolId}/equipo`, label: 'Equipo', icon: Shirt },
   { href: `/p/${poolId}/actividad`, label: 'Actividad', icon: Bell },
   ...(isAdmin ? [{ href: `/p/${poolId}/admin`, label: 'Admin', icon: Settings }] : []),
 ]
