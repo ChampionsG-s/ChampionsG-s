@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import type { EquipoRoster, EquipoPlayer, EquipoWallet, EquipoFormation } from '@/types'
 
 const SELL_RATIO = 0.65
+const BENCH_SIZE = 3
 const FORMATIONS: Record<EquipoFormation, { def: number; med: number; del: number }> = {
   '1-2-2': { def: 1, med: 2, del: 2 },
   '2-1-2': { def: 2, med: 1, del: 2 },
@@ -40,11 +41,13 @@ export function SquadView({ poolId, roster, playersById, wallet }: SquadViewProp
   const byPos = (pos: number) =>
     withPlayer.filter(x => x.player.position === pos).sort((a, b) => b.player.coin_price - a.player.coin_price)
 
+  const gks = byPos(1)
   const defs = byPos(2)
   const meds = byPos(3)
   const dels = byPos(4)
 
   const starterIds = new Set([
+    ...gks.slice(0, 1).map(x => x.roster.id),
     ...defs.slice(0, shape.def).map(x => x.roster.id),
     ...meds.slice(0, shape.med).map(x => x.roster.id),
     ...dels.slice(0, shape.del).map(x => x.roster.id),
@@ -75,7 +78,7 @@ export function SquadView({ poolId, roster, playersById, wallet }: SquadViewProp
     router.refresh()
   }
 
-  const renderRow = (count: number, items: Entry[]) => (
+  const renderSlots = (count: number, items: Entry[], emptyLabel: string) => (
     <div className="flex items-center justify-center gap-2 flex-wrap">
       {Array.from({ length: count }).map((_, i) => {
         const entry = items[i]
@@ -83,16 +86,16 @@ export function SquadView({ poolId, roster, playersById, wallet }: SquadViewProp
           return (
             <div
               key={i}
-              className="w-[76px] h-[104px] rounded-xl border-2 border-dashed border-white/20 flex items-center justify-center text-[10px] text-muted text-center px-1"
+              className="w-[76px] h-[104px] rounded-xl border-2 border-dashed border-white/25 bg-white/[0.03] flex items-center justify-center text-[10px] text-cream/50 text-center px-1"
             >
-              Vacío
+              {emptyLabel}
             </div>
           )
         }
         const { roster: r, player } = entry
         const sellPrice = Math.round(r.purchase_price * SELL_RATIO)
         return (
-          <div key={r.id} className="w-[76px] flex flex-col items-center gap-1 rounded-xl border border-gold/40 bg-black/30 p-1.5">
+          <div key={r.id} className="w-[76px] flex flex-col items-center gap-1 rounded-xl border border-gold/50 bg-black/40 backdrop-blur-[1px] p-1.5 shadow-[0_6px_16px_rgba(0,0,0,0.4)]">
             <PlayerPhoto name={player.name} photoUrl={player.photo_url} heroPhotoUrl={player.hero_photo_url} size="md" />
             <p className="text-[10px] font-bold text-cream text-center leading-tight truncate w-full">{player.name}</p>
             <Flag team={player.team_name} size="sm" />
@@ -128,58 +131,49 @@ export function SquadView({ poolId, roster, playersById, wallet }: SquadViewProp
         ))}
       </div>
 
-      <div className="relative overflow-hidden rounded-2xl border border-green-900/60 bg-[linear-gradient(180deg,rgba(20,60,30,0.55),rgba(10,30,15,0.9))] p-4 space-y-4">
-        <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.08),transparent_50%)]" />
+      {/* Medio campo de futbol */}
+      <div className="relative overflow-hidden rounded-2xl border border-green-900/70 bg-[linear-gradient(180deg,#1d5533,#153f26_55%,#0e2c1a)] p-4 pt-9 pb-5 space-y-5 shadow-[0_16px_40px_rgba(0,0,0,0.4)]">
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          {/* Linea de medio campo + circulo central cortado */}
+          <div className="absolute top-0 left-0 right-0 h-px bg-white/25" />
+          <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 w-28 h-28 rounded-full border-2 border-white/20" />
+          <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white/30" />
+          {/* Area y area pequena frente a la porteria */}
+          <div className="absolute left-1/2 bottom-0 -translate-x-1/2 w-44 h-20 border-2 border-b-0 border-white/20 rounded-t-md" />
+          <div className="absolute left-1/2 bottom-0 -translate-x-1/2 w-24 h-9 border-2 border-b-0 border-white/20 rounded-t-md" />
+          {/* Banda lateral y esquinas */}
+          <div className="absolute inset-x-0 bottom-0 top-0 border-x border-white/10" />
+          <div className="absolute bottom-0 left-0 w-5 h-5 border-2 border-white/20 rounded-tr-full" style={{ borderLeft: 0, borderBottom: 0 }} />
+          <div className="absolute bottom-0 right-0 w-5 h-5 border-2 border-white/20 rounded-tl-full" style={{ borderRight: 0, borderBottom: 0 }} />
+        </div>
+
         <div className="relative">
-          <p className="text-center text-[10px] text-green-200/70 uppercase tracking-widest font-bold mb-2">Delanteros</p>
-          {renderRow(shape.del, dels)}
+          <p className="text-center text-[10px] text-white/60 uppercase tracking-widest font-bold mb-2">Delanteros</p>
+          {renderSlots(shape.del, dels, 'Vacío')}
         </div>
         <div className="relative">
-          <p className="text-center text-[10px] text-green-200/70 uppercase tracking-widest font-bold mb-2">Centrocampistas</p>
-          {renderRow(shape.med, meds)}
+          <p className="text-center text-[10px] text-white/60 uppercase tracking-widest font-bold mb-2">Centrocampistas</p>
+          {renderSlots(shape.med, meds, 'Vacío')}
         </div>
         <div className="relative">
-          <p className="text-center text-[10px] text-green-200/70 uppercase tracking-widest font-bold mb-2">Defensas</p>
-          {renderRow(shape.def, defs)}
+          <p className="text-center text-[10px] text-white/60 uppercase tracking-widest font-bold mb-2">Defensas</p>
+          {renderSlots(shape.def, defs, 'Vacío')}
+        </div>
+        <div className="relative">
+          <p className="text-center text-[10px] text-white/60 uppercase tracking-widest font-bold mb-2">Portero</p>
+          {renderSlots(1, gks, 'Vacío')}
         </div>
       </div>
 
+      {/* Banquillo */}
       <div>
-        <p className="text-[11px] text-muted uppercase tracking-wide font-bold mb-2 px-1">Banquillo ({bench.length}/3)</p>
-        {bench.length === 0 ? (
-          <div className="card text-center py-6">
-            <p className="text-muted text-sm">Ficha jugadores en el mercado para llenar el banquillo.</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {bench.map(({ roster: r, player }) => {
-              const sellPrice = Math.round(r.purchase_price * SELL_RATIO)
-              return (
-                <div
-                  key={r.id}
-                  className="flex items-center gap-3 rounded-2xl border border-slate-700/80 bg-[linear-gradient(155deg,rgba(29,47,83,0.42),rgba(10,15,30,0.95)_45%,rgba(7,11,22,0.95)_100%)] p-3"
-                >
-                  <PlayerPhoto name={player.name} photoUrl={player.photo_url} heroPhotoUrl={player.hero_photo_url} size="md" />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-bold text-sm text-cream truncate">{player.name}</p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <Flag team={player.team_name} size="sm" />
-                      <span className="text-[11px] text-muted truncate">{player.team_name}</span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={sellingId === r.id}
-                    onClick={() => handleSell(r.id, player.name, sellPrice)}
-                    className="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold border border-red-800 text-red-300 hover:bg-red-900/20 transition-colors disabled:opacity-50"
-                  >
-                    {sellingId === r.id ? '...' : `Vender · ${sellPrice.toLocaleString('es-ES')}`}
-                  </button>
-                </div>
-              )
-            })}
-          </div>
-        )}
+        <p className="text-[11px] text-muted uppercase tracking-wide font-bold mb-2 px-1">
+          Banquillo ({bench.length}/{BENCH_SIZE})
+        </p>
+        <div className="relative overflow-hidden rounded-2xl border border-border bg-[linear-gradient(160deg,rgba(51,65,85,0.35),rgba(15,23,42,0.9))] p-4">
+          <div aria-hidden className="pointer-events-none absolute inset-x-3 top-2 h-px bg-white/10" />
+          {renderSlots(BENCH_SIZE, bench, 'Banquillo')}
+        </div>
       </div>
     </div>
   )

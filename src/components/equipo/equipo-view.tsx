@@ -43,7 +43,7 @@ export function EquipoView({ poolId, currentUserId, wallet, cycle, listings, bid
           </div>
           <div className="text-right">
             <p className="text-[10px] text-muted uppercase tracking-wide font-bold">Plantilla</p>
-            <p className="font-display text-2xl text-cream">{ownedCount}/8</p>
+            <p className="font-display text-2xl text-cream">{ownedCount}/9</p>
           </div>
         </div>
       </div>
@@ -73,7 +73,7 @@ export function EquipoView({ poolId, currentUserId, wallet, cycle, listings, bid
           bids={bids}
           playersById={playersById}
           wallet={wallet}
-          squadFull={ownedCount >= 8}
+          squadFull={ownedCount >= 9}
           cycle={cycle}
         />
       ) : (
