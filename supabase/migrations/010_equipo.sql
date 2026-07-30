@@ -545,9 +545,9 @@ as $$
     sum(case
       when r.home_score is null then 0
       when sign(p.home_score - p.away_score) <> sign(r.home_score - r.away_score) then 0
-      when m.is_bonus is false then coalesce(m.pts_winner, 1)
-      when p.home_score = r.home_score and p.away_score = r.away_score then coalesce(m.pts_exact, 3)
-      else coalesce(m.pts_winner, 1)
+      when m.is_bonus is false then 1
+      when p.home_score = r.home_score and p.away_score = r.away_score then 3
+      else 1
     end)::integer as total
   from public.predictions p
   join public.matches m on m.id = p.match_id and m.jornada = target_jornada
