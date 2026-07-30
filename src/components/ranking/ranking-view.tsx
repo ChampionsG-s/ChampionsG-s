@@ -4,10 +4,9 @@ import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { RankingTable } from './ranking-table'
 import { RankingJornadaView } from './ranking-jornada-view'
-import { RankingEquipoView } from './ranking-equipo-view'
-import type { PoolMember, Prediction, Result, Match, EquipoRoster, EquipoPlayer } from '@/types'
+import type { PoolMember, Prediction, Result, Match } from '@/types'
 
-type Tab = 'total' | 'jornada' | 'equipo'
+type Tab = 'total' | 'jornada'
 
 interface RankingViewProps {
   poolId: string
@@ -16,20 +15,9 @@ interface RankingViewProps {
   results: Result[]
   matches: Match[]
   currentUserId: string
-  equipoRoster: EquipoRoster[]
-  equipoPlayers: EquipoPlayer[]
 }
 
-export function RankingView({
-  poolId,
-  members,
-  predictions,
-  results,
-  matches,
-  currentUserId,
-  equipoRoster,
-  equipoPlayers,
-}: RankingViewProps) {
+export function RankingView({ poolId, members, predictions, results, matches, currentUserId }: RankingViewProps) {
   const [tab, setTab] = useState<Tab>('total')
 
   return (
@@ -38,7 +26,6 @@ export function RankingView({
         {([
           ['total', '🏆 Total'],
           ['jornada', '📅 Por jornada'],
-          ['equipo', '👕 Equipo'],
         ] as [Tab, string][]).map(([key, label]) => (
           <button
             key={key}
@@ -62,18 +49,12 @@ export function RankingView({
           matches={matches}
           currentUserId={currentUserId}
         />
-      ) : tab === 'jornada' ? (
+      ) : (
         <RankingJornadaView
           members={members}
           matches={matches}
           results={results}
           predictions={predictions}
-        />
-      ) : (
-        <RankingEquipoView
-          members={members}
-          roster={equipoRoster}
-          players={equipoPlayers}
         />
       )}
     </div>

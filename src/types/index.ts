@@ -254,6 +254,7 @@ export interface EquipoRoster {
   points_at_acquisition: number
   banked_points: number
   acquired_at: string
+  acquired_jornada: number
   status: 'owned' | 'sold'
   sold_at: string | null
   sold_price: number | null

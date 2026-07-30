@@ -57,7 +57,12 @@ export default async function EquipoPage({
     await supabase.rpc('equipo_grant_jornada_rewards', { target_pool: poolId, target_jornada: num })
   }
 
-  const [cycleRes, listingsRes, bidsRes, rosterRes, playersRes] = await Promise.all([
+  const currentJornada = closedJornadaNums[0] ?? 0
+
+  const [membersRes, usersRes, walletsRes, cycleRes, listingsRes, bidsRes, rosterRes, playersRes] = await Promise.all([
+    supabase.from('pool_members').select('*').eq('pool_id', poolId).eq('status', 'approved'),
+    supabase.from('users').select('*'),
+    supabase.from('equipo_wallets').select('*').eq('pool_id', poolId),
     supabase.from('equipo_market_cycles').select('*').eq('pool_id', poolId).is('resolved_at', null).maybeSingle(),
     supabase.from('equipo_market_listings').select('*').eq('pool_id', poolId).eq('status', 'open'),
     supabase.from('equipo_bids').select('*').eq('pool_id', poolId),
@@ -65,11 +70,21 @@ export default async function EquipoPage({
     supabase.from('biwenger_players').select('*'),
   ])
 
+  const usersMap = new Map((usersRes.data ?? []).map(u => [u.id, u]))
+  const members = (membersRes.data ?? []).map(m => ({
+    ...m,
+    username: usersMap.get(m.user_id)?.username ?? 'Desconocido',
+    avatar_url: usersMap.get(m.user_id)?.avatar_url ?? null,
+  }))
+
   return (
     <EquipoView
       poolId={poolId}
       currentUserId={user!.id}
+      currentJornada={currentJornada}
+      members={members}
       wallet={wallet as EquipoWallet | null}
+      wallets={walletsRes.data ?? []}
       cycle={cycleRes.data}
       listings={listingsRes.data ?? []}
       bids={bidsRes.data ?? []}

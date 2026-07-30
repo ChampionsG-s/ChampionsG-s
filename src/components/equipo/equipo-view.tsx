@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { MarketView } from './market-view'
 import { SquadView } from './squad-view'
+import { EquipoRankingView } from './equipo-ranking-view'
 import type {
   EquipoWallet,
   EquipoMarketCycle,
@@ -11,14 +12,18 @@ import type {
   EquipoBid,
   EquipoRoster,
   EquipoPlayer,
+  PoolMember,
 } from '@/types'
 
-type Tab = 'market' | 'squad'
+type Tab = 'market' | 'squad' | 'ranking'
 
 interface EquipoViewProps {
   poolId: string
   currentUserId: string
+  currentJornada: number
+  members: (PoolMember & { username: string; avatar_url?: string | null })[]
   wallet: EquipoWallet | null
+  wallets: EquipoWallet[]
   cycle: EquipoMarketCycle | null
   listings: EquipoMarketListing[]
   bids: EquipoBid[]
@@ -26,7 +31,19 @@ interface EquipoViewProps {
   players: EquipoPlayer[]
 }
 
-export function EquipoView({ poolId, currentUserId, wallet, cycle, listings, bids, roster, players }: EquipoViewProps) {
+export function EquipoView({
+  poolId,
+  currentUserId,
+  currentJornada,
+  members,
+  wallet,
+  wallets,
+  cycle,
+  listings,
+  bids,
+  roster,
+  players,
+}: EquipoViewProps) {
   const [tab, setTab] = useState<Tab>('market')
   const playersById = new Map(players.map(p => [p.id, p]))
   const myRoster = roster.filter(r => r.user_id === currentUserId)
@@ -50,8 +67,9 @@ export function EquipoView({ poolId, currentUserId, wallet, cycle, listings, bid
 
       <div className="flex gap-1.5">
         {([
-          ['market', '🛒 Mercado'],
-          ['squad', '👕 Mi plantilla'],
+          ['market', 'Mercado'],
+          ['squad', 'Mi plantilla'],
+          ['ranking', 'Ranking'],
         ] as [Tab, string][]).map(([key, label]) => (
           <button
             key={key}
@@ -76,8 +94,18 @@ export function EquipoView({ poolId, currentUserId, wallet, cycle, listings, bid
           squadFull={ownedCount >= 9}
           cycle={cycle}
         />
-      ) : (
+      ) : tab === 'squad' ? (
         <SquadView poolId={poolId} roster={myRoster} playersById={playersById} wallet={wallet} />
+      ) : (
+        <EquipoRankingView
+          currentUserId={currentUserId}
+          currentJornada={currentJornada}
+          members={members}
+          roster={roster}
+          players={players}
+          playersById={playersById}
+          wallets={wallets}
+        />
       )}
     </div>
   )
