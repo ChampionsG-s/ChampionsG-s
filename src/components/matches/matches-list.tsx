@@ -324,26 +324,26 @@ function BetSummaryRow({ match, realTeams, pred }: BetSummaryRowProps) {
 
   return (
     <div className="flex items-center gap-2 sm:gap-3 px-4 py-2.5">
-      <Flag team={displayHome} size="sm" className="flex-shrink-0" />
       <div className="flex-1 min-w-0 text-center">
-        <p className="text-xs sm:text-sm font-semibold text-cream truncate">
-          {displayHome} <span className="text-muted font-normal">vs</span> {displayAway}
-        </p>
+        <div className="flex items-center justify-center gap-1.5">
+          <Flag team={displayHome} size="sm" className="flex-shrink-0" />
+          <span className="text-xs sm:text-sm font-semibold text-cream truncate">{displayHome}</span>
+          <span className="text-muted text-xs font-normal flex-shrink-0">vs</span>
+          <span className="text-xs sm:text-sm font-semibold text-cream truncate">{displayAway}</span>
+          <Flag team={displayAway} size="sm" className="flex-shrink-0" />
+        </div>
         <p className="text-[10px] text-muted mt-0.5">{dateDisplay}</p>
       </div>
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <span
-          className={cn(
-            'font-black text-xs px-2.5 py-1 rounded-full border',
-            isBonus
-              ? 'bg-gold/12 text-gold border-gold/40'
-              : 'bg-surface-2 text-cream border-border'
-          )}
-        >
-          {pickLabel}
-        </span>
-        <Flag team={displayAway} size="sm" className="flex-shrink-0" />
-      </div>
+      <span
+        className={cn(
+          'flex-shrink-0 font-black text-xs px-2.5 py-1 rounded-full border',
+          isBonus
+            ? 'bg-gold/12 text-gold border-gold/40'
+            : 'bg-surface-2 text-cream border-border'
+        )}
+      >
+        {pickLabel}
+      </span>
     </div>
   )
 }
