@@ -44,6 +44,9 @@ export function MatchesList({
   const activeTabRef = useRef<HTMLButtonElement | null>(null)
   const [savingJornada, setSavingJornada] = useState(false)
   const [savedJornada, setSavedJornada] = useState<string | null>(null)
+  const [committedMatchIds, setCommittedMatchIds] = useState<Set<string>>(
+    () => new Set(initialPredictions.map(p => p.match_id))
+  )
   const supabase = createClient()
 
   const isAdmin = membership.role === 'admin'
@@ -122,6 +125,7 @@ export function MatchesList({
   const currentOpen = isJornadaOpen(currentJornada)
   const bettableMatches = visibleMatches.filter(m => !getResult(m.id))
   const allBetsFilled = bettableMatches.length > 0 && bettableMatches.every(m => getPred(m.id))
+  const isJornadaCommitted = bettableMatches.length > 0 && bettableMatches.every(m => committedMatchIds.has(m.id))
 
   const handleSaveBets = useCallback(async () => {
     const toSave = bettableMatches
@@ -153,6 +157,11 @@ export function MatchesList({
       }, { onConflict: 'pool_id,dedupe_key' })
 
       setSavedJornada(currentJornada)
+      setCommittedMatchIds(prev => {
+        const next = new Set(prev)
+        toSave.forEach(p => next.add(p.match_id))
+        return next
+      })
     } catch (err) {
       console.error('Error saving bets:', err)
       alert('Error al guardar las apuestas. Intenta de nuevo.')
@@ -170,16 +179,20 @@ export function MatchesList({
       <div
         className={cn(
           'flex items-center gap-2 rounded-xl px-4 py-3 text-sm border',
-          currentOpen
-            ? 'bg-amber-900/20 border-amber-800/60 text-amber-200'
-            : 'bg-blue-900/20 border-blue-800/60 text-blue-200'
+          isJornadaCommitted
+            ? 'bg-green-900/20 border-green-800/60 text-green-200'
+            : currentOpen
+              ? 'bg-amber-900/20 border-amber-800/60 text-amber-200'
+              : 'bg-blue-900/20 border-blue-800/60 text-blue-200'
         )}
       >
-        <span>{currentOpen ? '⚠️' : '🔒'}</span>
+        <span>{isJornadaCommitted ? '✅' : currentOpen ? '⚠️' : '🔒'}</span>
         <span className="text-xs sm:text-sm">
-          {currentOpen
-            ? 'Las apuestas se cierran cuando llegue la fecha límite de la jornada'
-            : 'Jornada cerrada · Ya no se puede apostar en esta jornada'}
+          {isJornadaCommitted
+            ? 'Ya apostaste en esta jornada · Tus pronósticos quedaron bloqueados'
+            : currentOpen
+              ? 'Las apuestas se cierran cuando llegue la fecha límite de la jornada'
+              : 'Jornada cerrada · Ya no se puede apostar en esta jornada'}
         </span>
       </div>
 
@@ -214,60 +227,119 @@ export function MatchesList({
         </div>
       )}
 
-      <div className="space-y-2.5">
-        {visibleMatches.map(m => (
-          <MatchCard
-            key={m.id}
-            match={m}
-            realTeams={getRealTeams(m.id)}
-            pred={getPred(m.id)}
-            result={getResult(m.id)}
-            isLocked={!currentOpen}
-            onPred={handlePrediction}
-            onSignPred={handleSignPrediction}
-          />
-        ))}
-      </div>
-
-      {currentOpen && bettableMatches.length > 0 && (
-        <div className="pt-1">
-          <button
-            type="button"
-            disabled={!allBetsFilled || savingJornada}
-            onClick={handleSaveBets}
-            className={cn(
-              'relative w-full overflow-hidden rounded-2xl py-3.5 font-display text-xl tracking-[0.15em] transition-all duration-300 border',
-              allBetsFilled && !savingJornada
-                ? 'bg-gradient-to-b from-gold-2 to-gold border-gold text-background shadow-[0_10px_30px_rgba(212,160,23,0.4)] active:scale-[0.98]'
-                : 'bg-surface border-border text-muted cursor-not-allowed opacity-60'
-            )}
-          >
-            {allBetsFilled && !savingJornada && (
-              <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent" />
-            )}
-            <span className="flex items-center justify-center gap-2">
-              {savingJornada ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  GUARDANDO...
-                </>
-              ) : savedJornada === currentJornada ? (
-                <>
-                  <Check size={20} strokeWidth={3} />
-                  ¡APOSTADO!
-                </>
-              ) : (
-                'BET'
-              )}
-            </span>
-          </button>
-          {!allBetsFilled && !savingJornada && savedJornada !== currentJornada && (
-            <p className="text-center text-[11px] text-muted mt-1.5">
-              Completa un pronóstico en cada partido para poder apostar
-            </p>
-          )}
+      {isJornadaCommitted ? (
+        <div className="card !p-0 overflow-hidden divide-y divide-border/60">
+          {visibleMatches.map(m => (
+            <BetSummaryRow
+              key={m.id}
+              match={m}
+              realTeams={getRealTeams(m.id)}
+              pred={getPred(m.id)}
+            />
+          ))}
         </div>
+      ) : (
+        <>
+          <div className="space-y-2.5">
+            {visibleMatches.map(m => (
+              <MatchCard
+                key={m.id}
+                match={m}
+                realTeams={getRealTeams(m.id)}
+                pred={getPred(m.id)}
+                result={getResult(m.id)}
+                isLocked={!currentOpen}
+                onPred={handlePrediction}
+                onSignPred={handleSignPrediction}
+              />
+            ))}
+          </div>
+
+          {currentOpen && bettableMatches.length > 0 && (
+            <div className="pt-1">
+              <button
+                type="button"
+                disabled={!allBetsFilled || savingJornada}
+                onClick={handleSaveBets}
+                className={cn(
+                  'relative w-full overflow-hidden rounded-2xl py-3.5 font-display text-xl tracking-[0.15em] transition-all duration-300 border',
+                  allBetsFilled && !savingJornada
+                    ? 'bg-gradient-to-b from-gold-2 to-gold border-gold text-background shadow-[0_10px_30px_rgba(212,160,23,0.4)] active:scale-[0.98]'
+                    : 'bg-surface border-border text-muted cursor-not-allowed opacity-60'
+                )}
+              >
+                {allBetsFilled && !savingJornada && (
+                  <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+                )}
+                <span className="flex items-center justify-center gap-2">
+                  {savingJornada ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      GUARDANDO...
+                    </>
+                  ) : savedJornada === currentJornada ? (
+                    <>
+                      <Check size={20} strokeWidth={3} />
+                      ¡APOSTADO!
+                    </>
+                  ) : (
+                    'BET'
+                  )}
+                </span>
+              </button>
+              {!allBetsFilled && !savingJornada && savedJornada !== currentJornada && (
+                <p className="text-center text-[11px] text-muted mt-1.5">
+                  Completa un pronóstico en cada partido para poder apostar
+                </p>
+              )}
+            </div>
+          )}
+        </>
       )}
+    </div>
+  )
+}
+
+// ─── Bet Summary Row ───────────────────────────────────────────────────────────
+
+interface BetSummaryRowProps {
+  match: Match
+  realTeams?: PoolMatchTeams
+  pred?: Prediction
+}
+
+function BetSummaryRow({ match, realTeams, pred }: BetSummaryRowProps) {
+  const isBonus = match.is_bonus ?? false
+  const displayHome = realTeams?.real_home || match.home_team || match.home || '?'
+  const displayAway = realTeams?.real_away || match.away_team || match.away || '?'
+  const dateStr = match.match_date || match.date || ''
+  const dateDisplay = dateStr
+    ? new Date(dateStr).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) +
+      ' · ' +
+      new Date(dateStr).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+    : '?'
+  const pickLabel = pred
+    ? (isBonus ? `${pred.home_score}-${pred.away_score}` : signFromScores(pred.home_score, pred.away_score))
+    : '—'
+
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 py-2.5">
+      <div className="min-w-0 flex-1">
+        <p className="text-xs sm:text-sm font-semibold text-cream truncate">
+          {displayHome} <span className="text-muted font-normal">vs</span> {displayAway}
+        </p>
+        <p className="text-[10px] text-muted mt-0.5">{dateDisplay}</p>
+      </div>
+      <span
+        className={cn(
+          'flex-shrink-0 font-black text-xs px-2.5 py-1 rounded-full border',
+          isBonus
+            ? 'bg-gold/12 text-gold border-gold/40'
+            : 'bg-surface-2 text-cream border-border'
+        )}
+      >
+        {pickLabel}
+      </span>
     </div>
   )
 }
