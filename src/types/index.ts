@@ -158,6 +158,109 @@ export interface Notification {
   read_at: string | null
 }
 
+// ─── Equipo (mini-juego de fichajes fantasy) ───────────────────────────────────
+
+export interface EquipoPlayer {
+  id: number
+  name: string
+  slug: string | null
+  team_name: string
+  biwenger_team_id: number
+  position: number
+  status: string
+  biwenger_price: number
+  coin_price: number
+  season_points: number
+  photo_url: string
+  hero_photo_url: string | null
+  synced_at: string
+}
+
+export type EquipoFormation = '1-2-2' | '2-1-2'
+
+export interface EquipoWallet {
+  id: string
+  pool_id: string
+  user_id: string
+  balance: number
+  formation: EquipoFormation
+  updated_at: string
+}
+
+export type EquipoTransactionType =
+  | 'initial_grant'
+  | 'bid_hold'
+  | 'bid_refund'
+  | 'auction_win'
+  | 'direct_buy'
+  | 'sell'
+  | 'jornada_reward'
+
+export interface EquipoTransaction {
+  id: string
+  pool_id: string
+  user_id: string
+  type: EquipoTransactionType
+  amount: number
+  related_player_id: number | null
+  related_listing_id: string | null
+  related_jornada: number | null
+  dedupe_key: string
+  created_at: string
+}
+
+export interface EquipoMarketCycle {
+  id: string
+  pool_id: string
+  cycle_number: number
+  started_at: string
+  resolved_at: string | null
+}
+
+export type EquipoListingStatus = 'open' | 'sold_auction' | 'sold_direct' | 'expired'
+
+export interface EquipoMarketListing {
+  id: string
+  pool_id: string
+  cycle_id: string
+  player_id: number
+  starting_price: number
+  direct_buy_price: number
+  status: EquipoListingStatus
+  winning_bid_id: string | null
+  created_at: string
+  resolved_at: string | null
+}
+
+export interface EquipoBid {
+  id: string
+  pool_id: string
+  listing_id: string
+  user_id: string
+  amount: number
+  created_at: string
+  updated_at: string
+}
+
+export type EquipoAcquiredVia = 'auction' | 'direct_buy' | 'starter'
+
+export interface EquipoRoster {
+  id: string
+  pool_id: string
+  user_id: string
+  player_id: number
+  acquired_via: EquipoAcquiredVia
+  purchase_price: number
+  points_at_acquisition: number
+  banked_points: number
+  acquired_at: string
+  acquired_jornada: number
+  is_starter: boolean
+  status: 'owned' | 'sold'
+  sold_at: string | null
+  sold_price: number | null
+}
+
 // ─── App types ────────────────────────────────────────────────────────────────
 
 export interface UserScore {
