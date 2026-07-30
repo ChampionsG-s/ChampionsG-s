@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { AWARDS, ALL_TEAMS } from '@/lib/data/matches'
 import { cn } from '@/lib/utils'
@@ -64,7 +65,7 @@ export function AwardsPredictionsView({ poolId, predictions: initialPreds, resul
       }, { onConflict: 'pool_id,user_id,award_id' })
     } catch (err) {
       console.error('Error saving award prediction:', err)
-      alert('Error al guardar la predicción de premio. Intenta de nuevo.')
+      toast.error('Error al guardar la predicción de premio. Intenta de nuevo.')
     }
   }, [localLocked, poolId, membership.user_id, supabase])
 
@@ -77,7 +78,7 @@ export function AwardsPredictionsView({ poolId, predictions: initialPreds, resul
       setTimeout(() => setSaved(false), 3000)
     } catch (err) {
       console.error('Error locking awards predictions:', err)
-      alert('Error al bloquear predicciones. Intenta de nuevo.')
+      toast.error('Error al bloquear predicciones. Intenta de nuevo.')
     } finally {
       setSaving(false)
     }

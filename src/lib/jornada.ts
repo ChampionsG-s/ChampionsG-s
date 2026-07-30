@@ -62,3 +62,21 @@ export function isJornadaOpen(matches: Match[], label: string, openPhases: OpenP
   const deadline = jornadaDeadline(matches, label)
   return Number.isFinite(deadline) ? Date.now() < deadline : true
 }
+
+// Fecha del ULTIMO partido de una jornada (a diferencia de jornadaDeadline,
+// que usa el primero). Usado por Equipo: ahi una jornada se considera
+// "cerrada de verdad" cuando ha terminado su ultimo partido, no cuando ha
+// empezado el primero.
+function jornadaLastMatchDate(matches: Match[], jornadaNumber: number): number {
+  return matches
+    .filter(m => m.jornada === jornadaNumber)
+    .reduce((latest, match) => {
+      const time = new Date(match.match_date || match.date || '').getTime()
+      return Number.isFinite(time) && time > latest ? time : latest
+    }, Number.NEGATIVE_INFINITY)
+}
+
+export function isJornadaFullyClosed(matches: Match[], jornadaNumber: number): boolean {
+  const lastMatch = jornadaLastMatchDate(matches, jornadaNumber)
+  return Number.isFinite(lastMatch) && Date.now() >= lastMatch
+}

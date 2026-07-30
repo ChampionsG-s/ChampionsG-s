@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { syncBiwengerPlayers } from '@/lib/biwenger/sync'
-import { isJornadaOpen } from '@/lib/jornada'
+import { isJornadaFullyClosed } from '@/lib/jornada'
 import { EquipoView } from '@/components/equipo/equipo-view'
 import type { Match, EquipoWallet } from '@/types'
 
@@ -39,17 +39,15 @@ export default async function EquipoPage({
 
   // Reparte premios de jornadas ya cerradas que aun no se hayan pagado
   // (idempotente: la propia RPC ignora las que ya tienen dedupe_key).
-  const [matchesRes, openPhasesRes] = await Promise.all([
-    supabase.from('matches').select('*'),
-    supabase.from('pool_open_phases').select('*').eq('pool_id', poolId),
-  ])
-  const allMatches = (matchesRes.data ?? []) as Match[]
-  const openPhases = openPhasesRes.data ?? []
+  // "Cerrada" aqui significa que ya termino su ULTIMO partido (no que
+  // empezo el primero, como en el bloqueo de apuestas de la quiniela).
+  const { data: matchesData } = await supabase.from('matches').select('*')
+  const allMatches = (matchesData ?? []) as Match[]
 
   const closedJornadaNums = Array.from(new Set(
     allMatches.filter(m => m.jornada != null).map(m => m.jornada as number)
   ))
-    .filter(num => !isJornadaOpen(allMatches, `Jornada ${num}`, openPhases))
+    .filter(num => isJornadaFullyClosed(allMatches, num))
     .sort((a, b) => b - a)
     .slice(0, JORNADA_LOOKBACK)
 

@@ -2,10 +2,12 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { PitchShell } from './pitch-shell'
 import { SlotGrid } from './slot-grid'
+import { MySquadPlayerModal } from './my-squad-player-modal'
 import { splitFormation, SELL_RATIO, BENCH_SIZE, FORMATIONS, type EquipoEntry } from '@/lib/equipo/formation'
 import type { EquipoRoster, EquipoPlayer, EquipoWallet, EquipoFormation } from '@/types'
 
@@ -19,9 +21,9 @@ interface SquadViewProps {
 export function SquadView({ poolId, roster, playersById, wallet }: SquadViewProps) {
   const supabase = createClient()
   const router = useRouter()
-  const [sellingId, setSellingId] = useState<string | null>(null)
   const [switching, setSwitching] = useState(false)
   const [dragBusy, setDragBusy] = useState(false)
+  const [selectedEntry, setSelectedEntry] = useState<EquipoEntry | null>(null)
 
   const formationKey: EquipoFormation = wallet?.formation ?? '1-2-2'
   const slots = splitFormation(roster, playersById, formationKey)
@@ -32,25 +34,13 @@ export function SquadView({ poolId, roster, playersById, wallet }: SquadViewProp
     .filter((x): x is EquipoEntry => !!x.player)
   const entryByRosterId = new Map(ownedEntries.map(e => [e.roster.id, e]))
 
-  const handleSell = async (rosterId: string, playerName: string, sellPrice: number) => {
-    if (!confirm(`¿Vender a ${playerName} por ${sellPrice.toLocaleString('es-ES')} monedas?`)) return
-    setSellingId(rosterId)
-    const { error } = await supabase.rpc('equipo_sell_player', { target_roster_id: rosterId })
-    setSellingId(null)
-    if (error) {
-      alert(error.message)
-      return
-    }
-    router.refresh()
-  }
-
   const handleFormationChange = async (formation: EquipoFormation) => {
     if (formation === formationKey || switching) return
     setSwitching(true)
     const { error } = await supabase.rpc('equipo_set_formation', { target_pool: poolId, target_formation: formation })
     setSwitching(false)
     if (error) {
-      alert(error.message)
+      toast.error(error.message)
       return
     }
     router.refresh()
@@ -65,7 +55,7 @@ export function SquadView({ poolId, roster, playersById, wallet }: SquadViewProp
     if (!dragged) return
 
     if (dragged.player.position !== rowPosition) {
-      alert('Ese jugador no puede jugar en esa posición')
+      toast.warning('Ese jugador no puede jugar en esa posición')
       return
     }
     if (targetEntry && targetEntry.roster.id === dragged.roster.id) return
@@ -76,14 +66,14 @@ export function SquadView({ poolId, roster, playersById, wallet }: SquadViewProp
       if (targetEntry) {
         const { error } = await supabase.rpc('equipo_set_starter', { target_roster_id: targetEntry.roster.id, make_starter: false })
         if (error) {
-          alert(error.message)
+          toast.error(error.message)
           return
         }
       }
       if (!dragged.roster.is_starter) {
         const { error } = await supabase.rpc('equipo_set_starter', { target_roster_id: dragged.roster.id, make_starter: true })
         if (error) {
-          alert(error.message)
+          toast.error(error.message)
           return
         }
       }
@@ -104,24 +94,15 @@ export function SquadView({ poolId, roster, playersById, wallet }: SquadViewProp
     const { error } = await supabase.rpc('equipo_set_starter', { target_roster_id: dragged.roster.id, make_starter: false })
     setDragBusy(false)
     if (error) {
-      alert(error.message)
+      toast.error(error.message)
       return
     }
     router.refresh()
   }
 
   const sellFooter = (entry: EquipoEntry) => {
-    const sellPrice = Math.round(entry.roster.purchase_price * SELL_RATIO)
-    return (
-      <button
-        type="button"
-        disabled={sellingId === entry.roster.id}
-        onClick={() => handleSell(entry.roster.id, entry.player.name, sellPrice)}
-        className="text-[9px] font-bold text-red-300 hover:text-red-200 disabled:opacity-50"
-      >
-        {sellingId === entry.roster.id ? '...' : `Vender ${sellPrice}`}
-      </button>
-    )
+    const sellPrice = Math.round(entry.player.coin_price * SELL_RATIO)
+    return <span className="text-[9px] font-bold text-muted">Venta rápida {sellPrice}</span>
   }
 
   return (
@@ -152,6 +133,7 @@ export function SquadView({ poolId, roster, playersById, wallet }: SquadViewProp
             items={slots.del}
             emptyLabel="Vacío"
             renderFooter={sellFooter}
+            onCardClick={setSelectedEntry}
             draggable
             onDropEntry={(id, target) => handleDropOnRow(4, id, target)}
           />
@@ -163,6 +145,7 @@ export function SquadView({ poolId, roster, playersById, wallet }: SquadViewProp
             items={slots.med}
             emptyLabel="Vacío"
             renderFooter={sellFooter}
+            onCardClick={setSelectedEntry}
             draggable
             onDropEntry={(id, target) => handleDropOnRow(3, id, target)}
           />
@@ -174,6 +157,7 @@ export function SquadView({ poolId, roster, playersById, wallet }: SquadViewProp
             items={slots.def}
             emptyLabel="Vacío"
             renderFooter={sellFooter}
+            onCardClick={setSelectedEntry}
             draggable
             onDropEntry={(id, target) => handleDropOnRow(2, id, target)}
           />
@@ -185,6 +169,7 @@ export function SquadView({ poolId, roster, playersById, wallet }: SquadViewProp
             items={slots.gk}
             emptyLabel="Vacío"
             renderFooter={sellFooter}
+            onCardClick={setSelectedEntry}
             draggable
             onDropEntry={(id, target) => handleDropOnRow(1, id, target)}
           />
@@ -202,11 +187,14 @@ export function SquadView({ poolId, roster, playersById, wallet }: SquadViewProp
             items={slots.bench}
             emptyLabel="Banquillo"
             renderFooter={sellFooter}
+            onCardClick={setSelectedEntry}
             draggable
             onDropEntry={(id) => handleDropOnBench(id)}
           />
         </div>
       </div>
+
+      <MySquadPlayerModal entry={selectedEntry} onClose={() => setSelectedEntry(null)} />
     </div>
   )
 }

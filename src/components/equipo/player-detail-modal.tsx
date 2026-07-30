@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { X } from 'lucide-react'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { Flag } from '@/components/ui/flag'
 import { PlayerPhoto } from './player-photo'
@@ -38,7 +39,7 @@ export function PlayerDetailModal({ entry, currentJornada, onClose }: PlayerDeta
     const { error } = await supabase.rpc('equipo_poach_player', { target_roster_id: roster.id })
     setBuying(false)
     if (error) {
-      alert(error.message)
+      toast.error(error.message)
       return
     }
     onClose()
