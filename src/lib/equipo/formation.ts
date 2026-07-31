@@ -8,7 +8,6 @@ export const FORMATIONS: Record<EquipoFormation, { def: number; med: number; del
 export const BENCH_SIZE = 3
 export const SELL_RATIO = 0.65
 export const POACH_JORNADAS_REQUIRED = 2
-export const DIRECT_BUY_MIN_PRICE = 700
 
 export type EquipoEntry = { roster: EquipoRoster; player: EquipoPlayer }
 
@@ -55,10 +54,12 @@ export function splitFormation(
   return { gk: starterGk, def: starterDef, med: starterMed, del: starterDel, bench }
 }
 
-// Precio de "compra ya"/fichaje directo: minimo 700, aunque el jugador sea
-// muy barato (los baratos son justo los que puntuan poco por jugar poco).
+// Precio de "compra ya"/fichaje directo: siempre 1.5x el valor del jugador.
+// Antes tenia un suelo de 700 aparte, que para los jugadores baratos rompia
+// la proporcion (podia llegar a ser mas de 3x en vez de 1.5x); ahora el
+// suelo real viene de COIN_MIN en pricing.ts, aplicado de forma consistente.
 export function poachPrice(coinPrice: number): number {
-  return Math.max(DIRECT_BUY_MIN_PRICE, Math.round((coinPrice * 1.5) / 10) * 10)
+  return Math.round((coinPrice * 1.5) / 10) * 10
 }
 
 export function jornadasUntilPoachable(acquiredJornada: number, currentJornada: number): number {
