@@ -26,8 +26,9 @@ export function PlayerCard({ listing, player, highestBid, myBid, balance, squadF
   const router = useRouter()
   const minNextBid = highestBid !== null ? highestBid + 10 : listing.starting_price
   const [bidValue, setBidValue] = useState<string>(String(minNextBid))
-  const [loading, setLoading] = useState<'bid' | 'buy' | null>(null)
+  const [loading, setLoading] = useState<'bid' | 'buy' | 'cancel' | null>(null)
   const [confirmingBuy, setConfirmingBuy] = useState(false)
+  const [confirmingCancel, setConfirmingCancel] = useState(false)
 
   const handleBid = async () => {
     const amount = parseInt(bidValue, 10)
@@ -42,6 +43,18 @@ export function PlayerCard({ listing, player, highestBid, myBid, balance, squadF
     setLoading('bid')
     const { error } = await supabase.rpc('equipo_place_bid', { target_listing: listing.id, target_amount: amount })
     setLoading(null)
+    if (error) {
+      toast.error(error.message)
+      return
+    }
+    router.refresh()
+  }
+
+  const handleCancelBidConfirmed = async () => {
+    setLoading('cancel')
+    const { error } = await supabase.rpc('equipo_cancel_bid', { target_listing: listing.id })
+    setLoading(null)
+    setConfirmingCancel(false)
     if (error) {
       toast.error(error.message)
       return
@@ -104,7 +117,17 @@ export function PlayerCard({ listing, player, highestBid, myBid, balance, squadF
       </div>
 
       {myBid > 0 && (
-        <p className="text-[10px] text-gold/80 text-center mt-1.5">Tu puja: {myBid.toLocaleString('es-ES')}</p>
+        <div className="flex items-center justify-center gap-2 mt-1.5">
+          <p className="text-[10px] text-gold/80">Tu puja: {myBid.toLocaleString('es-ES')}</p>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => setConfirmingCancel(true)}
+            className="text-[10px] font-bold text-red-300 hover:text-red-200 disabled:opacity-50"
+          >
+            {loading === 'cancel' ? '...' : 'Retirar puja'}
+          </button>
+        </div>
       )}
 
       <div className="mt-3 flex items-center gap-2">
@@ -149,6 +172,17 @@ export function PlayerCard({ listing, player, highestBid, myBid, balance, squadF
           loading={loading === 'buy'}
           onConfirm={handleDirectBuyConfirmed}
           onCancel={() => setConfirmingBuy(false)}
+        />
+      )}
+
+      {confirmingCancel && (
+        <ConfirmModal
+          title="¿Seguro?"
+          message={`Vas a retirar tu puja de ${myBid.toLocaleString('es-ES')} monedas por ${player.name}. Se te devolverá el dinero.`}
+          confirmLabel="Retirar puja"
+          loading={loading === 'cancel'}
+          onConfirm={handleCancelBidConfirmed}
+          onCancel={() => setConfirmingCancel(false)}
         />
       )}
     </div>
