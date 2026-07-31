@@ -16,15 +16,13 @@ interface RankingTableProps {
   currentUserId: string
 }
 
-// Los puestos 4+ se reparten en 3 bloques (tercios) consecutivos, cada
-// uno mostrado como una cuadricula de tarjetas alineadas. Cada bloque usa
-// un tinte oscuro distinto (muy sutil) para diferenciarse sin romper la
-// estetica dorada/marino de la pagina.
-const RANKING_GROUPS = 3
-const RANKING_GROUP_TINTS = [
+// Puestos 4-10: bloque propio, separado del resto. Puestos 11 en
+// adelante: un unico bloque continuo. Dentro de cada cuadricula, las
+// tarjetas alternan dos tintes oscuros muy sutiles para que un puesto se
+// distinga del contiguo, sin romper la estetica dorada/marino.
+const RANKING_ALT_TINTS = [
   'bg-slate-800/30 border-slate-600/30',
-  'bg-indigo-950/40 border-indigo-800/30',
-  'bg-teal-950/30 border-teal-800/30',
+  'bg-indigo-950/35 border-indigo-800/30',
 ]
 
 const PODIUM_STYLE = {
@@ -173,49 +171,61 @@ export function RankingTable({
       )}
 
       {rest.length > 0 && (() => {
-        const chunkSize = Math.ceil(rest.length / RANKING_GROUPS)
-        const groups = Array.from({ length: RANKING_GROUPS }, (_, g) =>
-          rest.slice(g * chunkSize, (g + 1) * chunkSize).map((entry, i) => ({ entry, pos: g * chunkSize + i + 4 }))
-        ).filter(group => group.length > 0)
+        const withPos = rest.map((entry, i) => ({ entry, pos: i + 4 }))
+        const firstBlock = withPos.slice(0, 7) // puestos 4-10
+        const secondBlock = withPos.slice(7) // puestos 11 en adelante
+
+        const renderCard = ({ entry, pos }: { entry: (typeof withPos)[number]['entry']; pos: number }, idx: number) => {
+          const isMe = entry.member.user_id === currentUserId
+          return (
+            <div
+              key={entry.member.id}
+              className={cn(
+                'relative flex flex-col items-center rounded-2xl border px-2 pt-6 pb-3',
+                isMe ? 'border-gold/50 bg-gold/[0.06]' : RANKING_ALT_TINTS[idx % RANKING_ALT_TINTS.length]
+              )}
+            >
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full border-2 border-border bg-surface-2 p-0.5">
+                <Avatar username={entry.member.username} avatarUrl={entry.member.avatar_url} size="md" />
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-surface-2 border border-border flex items-center justify-center text-[8px] font-black text-muted">
+                  {pos}
+                </span>
+              </div>
+              <div className="mt-2 text-xs font-bold text-cream text-center truncate max-w-full flex items-center gap-1 flex-wrap justify-center">
+                {entry.member.username}
+                {entry.member.role === 'admin' && <span className="badge badge-admin text-[8px]">ADMIN</span>}
+              </div>
+              {isMe && <span className="text-[9px] text-muted">(tú)</span>}
+              <div className="mt-1 font-display text-base text-gold leading-none">
+                {entry.total} <span className="text-[9px] font-sans text-muted">pts</span>
+              </div>
+            </div>
+          )
+        }
 
         return (
-          <div className="space-y-5">
-            {groups.map((group, gi) => (
-              <div key={gi} className="space-y-2.5">
+          <div className="space-y-7">
+            {firstBlock.length > 0 && (
+              <div className="space-y-2.5">
                 <p className="text-[11px] text-muted uppercase tracking-wide px-1">
-                  Puestos {group[0].pos}–{group[group.length - 1].pos}
+                  Puestos {firstBlock[0].pos}–{firstBlock[firstBlock.length - 1].pos}
                 </p>
                 <div className="grid grid-cols-3 gap-2.5">
-                  {group.map(({ entry, pos }) => {
-                    const isMe = entry.member.user_id === currentUserId
-                    return (
-                      <div
-                        key={entry.member.id}
-                        className={cn(
-                          'relative flex flex-col items-center rounded-2xl border px-2 pt-6 pb-3',
-                          isMe ? 'border-gold/50 bg-gold/[0.06]' : RANKING_GROUP_TINTS[gi % RANKING_GROUP_TINTS.length]
-                        )}
-                      >
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full border-2 border-border bg-surface-2 p-0.5">
-                          <Avatar username={entry.member.username} avatarUrl={entry.member.avatar_url} size="md" />
-                          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-surface-2 border border-border flex items-center justify-center text-[8px] font-black text-muted">
-                            {pos}
-                          </span>
-                        </div>
-                        <div className="mt-2 text-xs font-bold text-cream text-center truncate max-w-full flex items-center gap-1 flex-wrap justify-center">
-                          {entry.member.username}
-                          {entry.member.role === 'admin' && <span className="badge badge-admin text-[8px]">ADMIN</span>}
-                        </div>
-                        {isMe && <span className="text-[9px] text-muted">(tú)</span>}
-                        <div className="mt-1 font-display text-base text-gold leading-none">
-                          {entry.total} <span className="text-[9px] font-sans text-muted">pts</span>
-                        </div>
-                      </div>
-                    )
-                  })}
+                  {firstBlock.map((item, i) => renderCard(item, i))}
                 </div>
               </div>
-            ))}
+            )}
+
+            {secondBlock.length > 0 && (
+              <div className="space-y-2.5">
+                <p className="text-[11px] text-muted uppercase tracking-wide px-1">
+                  Puestos {secondBlock[0].pos}–{secondBlock[secondBlock.length - 1].pos}
+                </p>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {secondBlock.map((item, i) => renderCard(item, firstBlock.length + i))}
+                </div>
+              </div>
+            )}
           </div>
         )
       })()}
