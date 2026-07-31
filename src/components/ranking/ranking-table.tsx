@@ -181,22 +181,21 @@ export function RankingTable({
             <div
               key={entry.member.id}
               className={cn(
-                'relative flex flex-col items-center rounded-2xl border px-2 pt-6 pb-3',
+                'relative flex flex-col items-center justify-center rounded-2xl border px-1.5 pt-8 pb-2.5 h-[112px]',
                 isMe ? 'border-gold/50 bg-gold/[0.06]' : RANKING_ALT_TINTS[idx % RANKING_ALT_TINTS.length]
               )}
             >
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full border-2 border-border bg-surface-2 p-0.5">
-                <Avatar username={entry.member.username} avatarUrl={entry.member.avatar_url} size="md" />
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full border border-border/60 bg-surface-2 p-0.5">
+                <Avatar username={entry.member.username} avatarUrl={entry.member.avatar_url} size="lg" />
                 <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-surface-2 border border-border flex items-center justify-center text-[8px] font-black text-muted">
                   {pos}
                 </span>
               </div>
-              <div className="mt-2 text-xs font-bold text-cream text-center truncate max-w-full flex items-center gap-1 flex-wrap justify-center">
+              <div className="mt-1 text-xs font-bold text-cream text-center truncate max-w-full">
                 {entry.member.username}
-                {entry.member.role === 'admin' && <span className="badge badge-admin text-[8px]">ADMIN</span>}
+                {isMe && <span className="text-muted font-normal"> (tú)</span>}
               </div>
-              {isMe && <span className="text-[9px] text-muted">(tú)</span>}
-              <div className="mt-1 font-display text-base text-gold leading-none">
+              <div className="mt-0.5 font-display text-base text-gold leading-none">
                 {entry.total} <span className="text-[9px] font-sans text-muted">pts</span>
               </div>
             </div>
