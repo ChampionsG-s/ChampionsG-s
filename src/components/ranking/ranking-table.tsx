@@ -16,6 +16,17 @@ interface RankingTableProps {
   currentUserId: string
 }
 
+// Los puestos 4+ se reparten en 3 bloques (tercios) consecutivos, cada
+// uno mostrado como una cuadricula de tarjetas alineadas. Cada bloque usa
+// un tinte oscuro distinto (muy sutil) para diferenciarse sin romper la
+// estetica dorada/marino de la pagina.
+const RANKING_GROUPS = 3
+const RANKING_GROUP_TINTS = [
+  'bg-slate-800/30 border-slate-600/30',
+  'bg-indigo-950/40 border-indigo-800/30',
+  'bg-teal-950/30 border-teal-800/30',
+]
+
 const PODIUM_STYLE = {
   1: {
     label: 'ORO',
@@ -161,36 +172,53 @@ export function RankingTable({
         </div>
       )}
 
-      {rest.length > 0 && (
-        <div className="card !p-0 overflow-hidden">
-          <p className="text-[11px] text-muted uppercase tracking-wide px-4 pt-3 pb-1">Puestos 4 en adelante</p>
-          <div className="divide-y divide-border/60">
-            {rest.map((entry, i) => {
-              const pos = i + 4
-              const isMe = entry.member.user_id === currentUserId
-              return (
-                <div
-                  key={entry.member.id}
-                  className={cn('flex items-center gap-3 px-4 py-3 transition-colors', isMe && 'bg-gold/[0.06]')}
-                >
-                  <div className="w-7 text-center flex-shrink-0">
-                    <span className="text-muted font-bold text-sm">{pos}</span>
-                  </div>
-                  <Avatar username={entry.member.username} avatarUrl={entry.member.avatar_url} size="md" />
-                  <div className="min-w-0 flex-1">
-                    <div className="font-bold text-sm flex items-center gap-1.5 flex-wrap truncate">
-                      {entry.member.username}
-                      {entry.member.role === 'admin' && <span className="badge badge-admin">ADMIN</span>}
-                      {isMe && <span className="text-muted text-xs font-normal">(tú)</span>}
-                    </div>
-                  </div>
-                  <div className="font-display text-2xl text-gold flex-shrink-0">{entry.total}</div>
+      {rest.length > 0 && (() => {
+        const chunkSize = Math.ceil(rest.length / RANKING_GROUPS)
+        const groups = Array.from({ length: RANKING_GROUPS }, (_, g) =>
+          rest.slice(g * chunkSize, (g + 1) * chunkSize).map((entry, i) => ({ entry, pos: g * chunkSize + i + 4 }))
+        ).filter(group => group.length > 0)
+
+        return (
+          <div className="space-y-5">
+            {groups.map((group, gi) => (
+              <div key={gi} className="space-y-2.5">
+                <p className="text-[11px] text-muted uppercase tracking-wide px-1">
+                  Puestos {group[0].pos}–{group[group.length - 1].pos}
+                </p>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {group.map(({ entry, pos }) => {
+                    const isMe = entry.member.user_id === currentUserId
+                    return (
+                      <div
+                        key={entry.member.id}
+                        className={cn(
+                          'relative flex flex-col items-center rounded-2xl border px-2 pt-6 pb-3',
+                          isMe ? 'border-gold/50 bg-gold/[0.06]' : RANKING_GROUP_TINTS[gi % RANKING_GROUP_TINTS.length]
+                        )}
+                      >
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full border-2 border-border bg-surface-2 p-0.5">
+                          <Avatar username={entry.member.username} avatarUrl={entry.member.avatar_url} size="md" />
+                          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-surface-2 border border-border flex items-center justify-center text-[8px] font-black text-muted">
+                            {pos}
+                          </span>
+                        </div>
+                        <div className="mt-2 text-xs font-bold text-cream text-center truncate max-w-full flex items-center gap-1 flex-wrap justify-center">
+                          {entry.member.username}
+                          {entry.member.role === 'admin' && <span className="badge badge-admin text-[8px]">ADMIN</span>}
+                        </div>
+                        {isMe && <span className="text-[9px] text-muted">(tú)</span>}
+                        <div className="mt-1 font-display text-base text-gold leading-none">
+                          {entry.total} <span className="text-[9px] font-sans text-muted">pts</span>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
-              )
-            })}
+              </div>
+            ))}
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       <div className="card">
         <h3 className="font-bold text-sm text-gold mb-3">Sistema de puntos</h3>
