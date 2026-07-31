@@ -3,6 +3,7 @@ import type { EquipoRoster, EquipoPlayer, EquipoFormation } from '@/types'
 export const FORMATIONS: Record<EquipoFormation, { def: number; med: number; del: number }> = {
   '1-2-2': { def: 1, med: 2, del: 2 },
   '2-1-2': { def: 2, med: 1, del: 2 },
+  '2-2-1': { def: 2, med: 2, del: 1 },
 }
 
 export const BENCH_SIZE = 3

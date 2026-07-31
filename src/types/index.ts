@@ -176,7 +176,7 @@ export interface EquipoPlayer {
   synced_at: string
 }
 
-export type EquipoFormation = '1-2-2' | '2-1-2'
+export type EquipoFormation = '1-2-2' | '2-1-2' | '2-2-1'
 
 export interface EquipoWallet {
   id: string
