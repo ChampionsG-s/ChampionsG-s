@@ -48,6 +48,8 @@ export function EquipoView({
   const playersById = new Map(players.map(p => [p.id, p]))
   const myRoster = roster.filter(r => r.user_id === currentUserId)
   const ownedCount = myRoster.filter(r => r.status === 'owned').length
+  const balance = wallet?.balance ?? 0
+  const negativeBalance = balance <= 0
 
   return (
     <div className="space-y-4">
@@ -56,7 +58,9 @@ export function EquipoView({
         <div className="relative flex items-center justify-between">
           <div>
             <p className="text-[10px] text-gold/80 uppercase tracking-wide font-bold">Saldo</p>
-            <p className="font-display text-2xl text-gold">{(wallet?.balance ?? 0).toLocaleString('es-ES')} 🪙</p>
+            <p className={cn('font-display text-2xl', negativeBalance ? 'text-red-400' : 'text-gold')}>
+              {balance.toLocaleString('es-ES')} 🪙
+            </p>
           </div>
           <div className="text-right">
             <p className="text-[10px] text-muted uppercase tracking-wide font-bold">Plantilla</p>
@@ -64,6 +68,15 @@ export function EquipoView({
           </div>
         </div>
       </div>
+
+      {negativeBalance && (
+        <div className="rounded-xl border border-red-700/60 bg-red-950/40 px-4 py-3 text-center">
+          <p className="text-sm font-bold text-red-200">Tienes saldo negativo o a cero</p>
+          <p className="text-xs text-red-300/90 mt-0.5">
+            Vende a algún jugador para recuperar saldo positivo. Mientras sigas así, no puntuarás en el ranking de Equipo ni cobrarás el premio de esta jornada.
+          </p>
+        </div>
+      )}
 
       <div className="flex gap-1.5">
         {([

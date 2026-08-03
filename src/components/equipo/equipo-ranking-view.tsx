@@ -37,14 +37,16 @@ export function EquipoRankingView({
   const ranking = members
     .map(member => {
       const memberRoster = roster.filter(r => r.user_id === member.user_id)
-      const total = memberRoster.reduce((sum, r) => {
+      const rawTotal = memberRoster.reduce((sum, r) => {
         if (r.status === 'sold') return sum + r.banked_points
         const player = playersById.get(r.player_id)
         const current = player ? Math.max(0, player.season_points - r.points_at_acquisition) : 0
         return sum + current
       }, 0)
       const ownedCount = memberRoster.filter(r => r.status === 'owned').length
-      return { member, total, ownedCount, memberRoster }
+      const negativeBalance = (walletByUser.get(member.user_id)?.balance ?? 0) <= 0
+      const total = negativeBalance ? 0 : rawTotal
+      return { member, total, negativeBalance, ownedCount, memberRoster }
     })
     .sort((a, b) => b.total - a.total)
 
@@ -63,7 +65,7 @@ export function EquipoRankingView({
 
   return (
     <div className="space-y-2.5">
-      {ranking.map(({ member, total, ownedCount }, i) => (
+      {ranking.map(({ member, total, negativeBalance, ownedCount }, i) => (
         <button
           key={member.id}
           type="button"
@@ -83,6 +85,9 @@ export function EquipoRankingView({
               {member.role === 'admin' && <span className="badge badge-admin">ADMIN</span>}
             </p>
             <p className="text-[11px] text-muted">{ownedCount}/9 jugadores</p>
+            {negativeBalance && (
+              <p className="text-[10px] text-red-300 font-bold">⚠️ Saldo negativo, no puntúa</p>
+            )}
           </div>
           <span className="font-display text-lg text-gold">{total}pts</span>
         </button>
