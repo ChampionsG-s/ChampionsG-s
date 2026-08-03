@@ -102,7 +102,7 @@ export function ActividadView({ personal, global: globalNotifs }: ActividadViewP
                 <div className="min-w-0 flex-1">
                   <p className="font-bold text-sm">{n.title}</p>
                   <p className="text-sm text-muted leading-snug">{n.body}</p>
-                  <p className="text-[10px] text-muted/70 mt-1">
+                  <p className="text-[10px] text-muted/70 mt-1" suppressHydrationWarning>
                     {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: es })}
                   </p>
                 </div>
