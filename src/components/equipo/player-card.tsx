@@ -7,7 +7,6 @@ import { createClient } from '@/lib/supabase/client'
 import { Flag } from '@/components/ui/flag'
 import { PlayerPhoto } from './player-photo'
 import { ConfirmModal } from './confirm-modal'
-import { cn } from '@/lib/utils'
 import type { EquipoPlayer, EquipoMarketListing } from '@/types'
 
 const POSITION_LABEL: Record<number, string> = { 1: 'POR', 2: 'DEF', 3: 'MED', 4: 'DEL' }
@@ -18,16 +17,14 @@ interface PlayerCardProps {
   highestBid: number | null
   myBid: number
   balance: number
-  squadFull: boolean
 }
 
-export function PlayerCard({ listing, player, highestBid, myBid, balance, squadFull }: PlayerCardProps) {
+export function PlayerCard({ listing, player, highestBid, myBid, balance }: PlayerCardProps) {
   const supabase = createClient()
   const router = useRouter()
   const minNextBid = highestBid !== null ? highestBid + 10 : listing.starting_price
   const [bidValue, setBidValue] = useState<string>(String(minNextBid))
-  const [loading, setLoading] = useState<'bid' | 'buy' | 'cancel' | null>(null)
-  const [confirmingBuy, setConfirmingBuy] = useState(false)
+  const [loading, setLoading] = useState<'bid' | 'cancel' | null>(null)
   const [confirmingCancel, setConfirmingCancel] = useState(false)
 
   const handleBid = async () => {
@@ -62,26 +59,6 @@ export function PlayerCard({ listing, player, highestBid, myBid, balance, squadF
     router.refresh()
   }
 
-  const handleDirectBuyClick = () => {
-    if (squadFull) {
-      toast.warning('Tu plantilla ya tiene 9 jugadores (portero + 5 titulares + 3 banquillo)')
-      return
-    }
-    setConfirmingBuy(true)
-  }
-
-  const handleDirectBuyConfirmed = async () => {
-    setLoading('buy')
-    const { error } = await supabase.rpc('equipo_direct_buy', { target_listing: listing.id })
-    setLoading(null)
-    setConfirmingBuy(false)
-    if (error) {
-      toast.error(error.message)
-      return
-    }
-    router.refresh()
-  }
-
   const busy = loading !== null
 
   return (
@@ -101,19 +78,13 @@ export function PlayerCard({ listing, player, highestBid, myBid, balance, squadF
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2 text-center">
-        <div className="rounded-xl bg-black/25 border border-white/10 py-1.5">
-          <p className="text-[9px] text-muted uppercase tracking-wide">
-            {highestBid !== null ? 'Puja actual' : 'Precio de salida'}
-          </p>
-          <p className="font-display text-base text-gold">
-            {(highestBid ?? listing.starting_price).toLocaleString('es-ES')}
-          </p>
-        </div>
-        <div className="rounded-xl bg-black/25 border border-white/10 py-1.5">
-          <p className="text-[9px] text-muted uppercase tracking-wide">Compra ya</p>
-          <p className="font-display text-base text-cream">{listing.direct_buy_price.toLocaleString('es-ES')}</p>
-        </div>
+      <div className="mt-3 rounded-xl bg-black/25 border border-white/10 py-1.5 text-center">
+        <p className="text-[9px] text-muted uppercase tracking-wide">
+          {highestBid !== null ? 'Puja actual' : 'Precio de salida'}
+        </p>
+        <p className="font-display text-base text-gold">
+          {(highestBid ?? listing.starting_price).toLocaleString('es-ES')}
+        </p>
       </div>
 
       {myBid > 0 && (
@@ -149,31 +120,6 @@ export function PlayerCard({ listing, player, highestBid, myBid, balance, squadF
           {loading === 'bid' ? '...' : 'Pujar'}
         </button>
       </div>
-
-      <button
-        type="button"
-        disabled={busy || squadFull}
-        onClick={handleDirectBuyClick}
-        className={cn(
-          'mt-2 w-full py-2 rounded-xl text-xs font-bold transition-all',
-          squadFull
-            ? 'bg-surface border border-border text-muted cursor-not-allowed'
-            : 'bg-gradient-to-b from-gold-2 to-gold text-background shadow-md shadow-gold/20 disabled:opacity-50'
-        )}
-      >
-        {loading === 'buy' ? 'Comprando...' : `Comprar ya · ${listing.direct_buy_price.toLocaleString('es-ES')}`}
-      </button>
-
-      {confirmingBuy && (
-        <ConfirmModal
-          title="¿Seguro?"
-          message={`Vas a fichar a ${player.name} por ${listing.direct_buy_price.toLocaleString('es-ES')} monedas.`}
-          confirmLabel={`Comprar ya · ${listing.direct_buy_price.toLocaleString('es-ES')}`}
-          loading={loading === 'buy'}
-          onConfirm={handleDirectBuyConfirmed}
-          onCancel={() => setConfirmingBuy(false)}
-        />
-      )}
 
       {confirmingCancel && (
         <ConfirmModal

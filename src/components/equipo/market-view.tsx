@@ -9,13 +9,12 @@ interface MarketViewProps {
   bids: EquipoBid[]
   playersById: Map<number, EquipoPlayer>
   wallet: EquipoWallet | null
-  squadFull: boolean
   cycle: EquipoMarketCycle | null
 }
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000
 
-export function MarketView({ currentUserId, listings, bids, playersById, wallet, squadFull, cycle }: MarketViewProps) {
+export function MarketView({ currentUserId, listings, bids, playersById, wallet, cycle }: MarketViewProps) {
   const balance = wallet?.balance ?? 0
   const cycleEndsAt = cycle ? new Date(cycle.started_at).getTime() + TWENTY_FOUR_HOURS_MS : null
 
@@ -51,7 +50,6 @@ export function MarketView({ currentUserId, listings, bids, playersById, wallet,
               highestBid={highestBid}
               myBid={myBid}
               balance={balance}
-              squadFull={squadFull}
             />
           )
         })}

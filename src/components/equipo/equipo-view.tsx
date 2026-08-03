@@ -91,7 +91,6 @@ export function EquipoView({
           bids={bids}
           playersById={playersById}
           wallet={wallet}
-          squadFull={ownedCount >= 9}
           cycle={cycle}
         />
       ) : tab === 'squad' ? (
