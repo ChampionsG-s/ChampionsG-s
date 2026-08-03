@@ -2,10 +2,14 @@
 // mediana ~1.040.000) a nuestra economia de 10.000 monedas. Normaliza en
 // logaritmo porque el rango real es muy asimetrico, y aplica una curva
 // (GAMMA) para que solo las estrellas de verdad se acerquen al techo:
-// Mbappe (24.690.000) cae en 8.000, el mas barato en 100.
+// Mbappe (24.690.000) cae en 8.000, el mas barato en 300.
+// COIN_MIN subido de 100 a 300: con 100, un tercio de la plantilla real caia
+// por debajo de 300 monedas (muchos pegados al suelo absoluto), haciendo que
+// "comprar ya" (1.5x, sin suelo aparte) resultara casi gratis para un tercio
+// del catalogo.
 const BIWENGER_MIN = 150_000
 const BIWENGER_MAX = 24_690_000
-const COIN_MIN = 100
+const COIN_MIN = 300
 const COIN_MAX = 8_000
 const GAMMA = 1.8
 

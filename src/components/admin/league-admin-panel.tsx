@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Flag } from '@/components/ui/flag'
@@ -87,7 +88,7 @@ export function LeagueAdminPanel({
       }
     } catch (err) {
       console.error('Error approving member:', err)
-      alert('Error al aceptar el usuario. Intenta de nuevo.')
+      toast.error('Error al aceptar el usuario. Intenta de nuevo.')
     } finally {
       setLoading(null)
     }
@@ -101,7 +102,7 @@ export function LeagueAdminPanel({
       setMembers(prev => prev.filter(member => member.id !== memberId))
     } catch (err) {
       console.error('Error rejecting member:', err)
-      alert('Error al rechazar el usuario. Intenta de nuevo.')
+      toast.error('Error al rechazar el usuario. Intenta de nuevo.')
     } finally {
       setLoading(null)
     }
@@ -117,7 +118,7 @@ export function LeagueAdminPanel({
       })
     } catch (err) {
       console.error('Error toggling jornada:', err)
-      alert('Error al cambiar la jornada. Intenta de nuevo.')
+      toast.error('Error al cambiar la jornada. Intenta de nuevo.')
     } finally {
       setLoading(null)
     }
@@ -146,7 +147,7 @@ export function LeagueAdminPanel({
       await notifyPointsEarned(matchId, homeScore, awayScore)
     } catch (err) {
       console.error('Error setting result:', err)
-      alert('Error al guardar el resultado. Intenta de nuevo.')
+      toast.error('Error al guardar el resultado. Intenta de nuevo.')
     }
   }
 
@@ -195,7 +196,7 @@ export function LeagueAdminPanel({
       }))
     } catch (err) {
       console.error('Error toggling bonus match:', err)
-      alert('Error al cambiar el partido bonus. Intenta de nuevo.')
+      toast.error('Error al cambiar el partido bonus. Intenta de nuevo.')
     } finally {
       setLoading(null)
     }

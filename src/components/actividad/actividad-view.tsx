@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { createClient } from '@/lib/supabase/client'
@@ -30,6 +31,7 @@ export function ActividadView({ personal, global: globalNotifs }: ActividadViewP
   const [tab, setTab] = useState<Tab>('personal')
   const [personalItems, setPersonalItems] = useState(personal)
   const supabase = createClient()
+  const router = useRouter()
 
   const unreadCount = useMemo(() => personalItems.filter(n => !n.read_at).length, [personalItems])
 
@@ -39,8 +41,12 @@ export function ActividadView({ personal, global: globalNotifs }: ActividadViewP
     if (unreadIds.length === 0) return
 
     setPersonalItems(prev => prev.map(n => unreadIds.includes(n.id) ? { ...n, read_at: new Date().toISOString() } : n))
-    supabase.from('notifications').update({ read_at: new Date().toISOString() }).in('id', unreadIds).then()
-  }, [tab, personalItems, supabase])
+    // router.refresh() en vez de fiarnos solo del realtime del badge del nav:
+    // si esta pagina se acaba de montar, la suscripcion de PoolShell puede no
+    // estar lista todavia cuando se dispara este update, y el evento se pierde.
+    supabase.from('notifications').update({ read_at: new Date().toISOString() }).in('id', unreadIds)
+      .then(() => router.refresh())
+  }, [tab, personalItems, supabase, router])
 
   const items = tab === 'personal' ? personalItems : globalNotifs
 

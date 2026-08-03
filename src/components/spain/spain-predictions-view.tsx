@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { SPAIN_FIELDS } from '@/lib/data/matches'
 import { cn } from '@/lib/utils'
@@ -61,7 +62,7 @@ export function SpainPredictionsView({ poolId, predictions: initialPreds, result
       }, { onConflict: 'pool_id,user_id,field_id' })
     } catch (err) {
       console.error('Error saving spain prediction:', err)
-      alert('Error al guardar la predicción. Intenta de nuevo.')
+      toast.error('Error al guardar la predicción. Intenta de nuevo.')
     }
   }, [localLocked, poolId, membership.user_id, supabase])
 
@@ -74,7 +75,7 @@ export function SpainPredictionsView({ poolId, predictions: initialPreds, result
       setTimeout(() => setSaved(false), 3000)
     } catch (err) {
       console.error('Error locking spain predictions:', err)
-      alert('Error al bloquear predicciones. Intenta de nuevo.')
+      toast.error('Error al bloquear predicciones. Intenta de nuevo.')
     } finally {
       setSaving(false)
     }

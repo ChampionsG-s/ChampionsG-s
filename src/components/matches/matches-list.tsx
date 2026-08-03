@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Loader2, Check } from 'lucide-react'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { scoreMatch, signFromScores, SIGN_TO_CANONICAL_SCORE, type MatchSign } from '@/lib/scoring'
 import { jornadaLabelForMatch, isJornadaOpen as computeIsJornadaOpen, type OpenPhase } from '@/lib/jornada'
@@ -259,7 +260,7 @@ export function MatchesList({
       })
     } catch (err) {
       console.error('Error saving bets:', err)
-      alert('Error al guardar las apuestas. Intenta de nuevo.')
+      toast.error('Error al guardar las apuestas. Intenta de nuevo.')
     } finally {
       setSavingJornada(false)
     }

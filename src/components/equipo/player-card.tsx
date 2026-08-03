@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { Flag } from '@/components/ui/flag'
 import { PlayerPhoto } from './player-photo'
+import { ConfirmModal } from './confirm-modal'
 import { cn } from '@/lib/utils'
 import type { EquipoPlayer, EquipoMarketListing } from '@/types'
 
@@ -24,39 +26,57 @@ export function PlayerCard({ listing, player, highestBid, myBid, balance, squadF
   const router = useRouter()
   const minNextBid = highestBid !== null ? highestBid + 10 : listing.starting_price
   const [bidValue, setBidValue] = useState<string>(String(minNextBid))
-  const [loading, setLoading] = useState<'bid' | 'buy' | null>(null)
+  const [loading, setLoading] = useState<'bid' | 'buy' | 'cancel' | null>(null)
+  const [confirmingBuy, setConfirmingBuy] = useState(false)
+  const [confirmingCancel, setConfirmingCancel] = useState(false)
 
   const handleBid = async () => {
     const amount = parseInt(bidValue, 10)
     if (!Number.isFinite(amount) || amount < minNextBid) {
-      alert(`La puja debe ser de al menos ${minNextBid.toLocaleString('es-ES')}`)
+      toast.warning(`La puja debe ser de al menos ${minNextBid.toLocaleString('es-ES')}`)
       return
     }
     if (amount - myBid > balance) {
-      alert('No tienes saldo suficiente para esa puja')
+      toast.warning('No tienes saldo suficiente para esa puja')
       return
     }
     setLoading('bid')
     const { error } = await supabase.rpc('equipo_place_bid', { target_listing: listing.id, target_amount: amount })
     setLoading(null)
     if (error) {
-      alert(error.message)
+      toast.error(error.message)
       return
     }
     router.refresh()
   }
 
-  const handleDirectBuy = async () => {
-    if (squadFull) {
-      alert('Tu plantilla ya tiene 9 jugadores (portero + 5 titulares + 3 banquillo)')
+  const handleCancelBidConfirmed = async () => {
+    setLoading('cancel')
+    const { error } = await supabase.rpc('equipo_cancel_bid', { target_listing: listing.id })
+    setLoading(null)
+    setConfirmingCancel(false)
+    if (error) {
+      toast.error(error.message)
       return
     }
-    if (!confirm(`¿Fichar a ${player.name} por ${listing.direct_buy_price.toLocaleString('es-ES')} monedas?`)) return
+    router.refresh()
+  }
+
+  const handleDirectBuyClick = () => {
+    if (squadFull) {
+      toast.warning('Tu plantilla ya tiene 9 jugadores (portero + 5 titulares + 3 banquillo)')
+      return
+    }
+    setConfirmingBuy(true)
+  }
+
+  const handleDirectBuyConfirmed = async () => {
     setLoading('buy')
     const { error } = await supabase.rpc('equipo_direct_buy', { target_listing: listing.id })
     setLoading(null)
+    setConfirmingBuy(false)
     if (error) {
-      alert(error.message)
+      toast.error(error.message)
       return
     }
     router.refresh()
@@ -97,7 +117,17 @@ export function PlayerCard({ listing, player, highestBid, myBid, balance, squadF
       </div>
 
       {myBid > 0 && (
-        <p className="text-[10px] text-gold/80 text-center mt-1.5">Tu puja: {myBid.toLocaleString('es-ES')}</p>
+        <div className="flex items-center justify-center gap-2 mt-1.5">
+          <p className="text-[10px] text-gold/80">Tu puja: {myBid.toLocaleString('es-ES')}</p>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => setConfirmingCancel(true)}
+            className="text-[10px] font-bold text-red-300 hover:text-red-200 disabled:opacity-50"
+          >
+            {loading === 'cancel' ? '...' : 'Retirar puja'}
+          </button>
+        </div>
       )}
 
       <div className="mt-3 flex items-center gap-2">
@@ -123,7 +153,7 @@ export function PlayerCard({ listing, player, highestBid, myBid, balance, squadF
       <button
         type="button"
         disabled={busy || squadFull}
-        onClick={handleDirectBuy}
+        onClick={handleDirectBuyClick}
         className={cn(
           'mt-2 w-full py-2 rounded-xl text-xs font-bold transition-all',
           squadFull
@@ -133,6 +163,28 @@ export function PlayerCard({ listing, player, highestBid, myBid, balance, squadF
       >
         {loading === 'buy' ? 'Comprando...' : `Comprar ya · ${listing.direct_buy_price.toLocaleString('es-ES')}`}
       </button>
+
+      {confirmingBuy && (
+        <ConfirmModal
+          title="¿Seguro?"
+          message={`Vas a fichar a ${player.name} por ${listing.direct_buy_price.toLocaleString('es-ES')} monedas.`}
+          confirmLabel={`Comprar ya · ${listing.direct_buy_price.toLocaleString('es-ES')}`}
+          loading={loading === 'buy'}
+          onConfirm={handleDirectBuyConfirmed}
+          onCancel={() => setConfirmingBuy(false)}
+        />
+      )}
+
+      {confirmingCancel && (
+        <ConfirmModal
+          title="¿Seguro?"
+          message={`Vas a retirar tu puja de ${myBid.toLocaleString('es-ES')} monedas por ${player.name}. Se te devolverá el dinero.`}
+          confirmLabel="Retirar puja"
+          loading={loading === 'cancel'}
+          onConfirm={handleCancelBidConfirmed}
+          onCancel={() => setConfirmingCancel(false)}
+        />
+      )}
     </div>
   )
 }

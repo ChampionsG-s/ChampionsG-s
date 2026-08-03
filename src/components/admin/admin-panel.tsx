@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { PHASE_INFO, PHASE_ORDER, ALL_TEAMS } from '@/lib/data/matches'
@@ -66,7 +67,7 @@ export function AdminPanel({
       setMembers(prev => prev.map(m => m.id === memberId ? { ...m, status: 'approved' } : m))
     } catch (err) {
       console.error('Error approving member:', err)
-      alert('Error al aceptar el usuario. Intenta de nuevo.')
+      toast.error('Error al aceptar el usuario. Intenta de nuevo.')
     } finally {
       setLoading(null)
     }
@@ -80,7 +81,7 @@ export function AdminPanel({
       setMembers(prev => prev.filter(m => m.id !== memberId))
     } catch (err) {
       console.error('Error rejecting member:', err)
-      alert('Error al rechazar el usuario. Intenta de nuevo.')
+      toast.error('Error al rechazar el usuario. Intenta de nuevo.')
     } finally {
       setLoading(null)
     }
@@ -94,7 +95,7 @@ export function AdminPanel({
       setMembers(prev => prev.map(m => m.id === memberId ? { ...m, ...updated } : m))
     } catch (err) {
       console.error('Error toggling lock:', err)
-      alert('Error al cambiar el bloqueo. Intenta de nuevo.')
+      toast.error('Error al cambiar el bloqueo. Intenta de nuevo.')
     } finally {
       setLoading(null)
     }
@@ -107,7 +108,7 @@ export function AdminPanel({
       setOpenPhases(prev => prev.map(p => p.phase === phase ? { ...p, is_open: !current } : p))
     } catch (err) {
       console.error('Error toggling phase:', err)
-      alert('Error al cambiar la ronda. Intenta de nuevo.')
+      toast.error('Error al cambiar la ronda. Intenta de nuevo.')
     } finally {
       setLoading(null)
     }
@@ -124,7 +125,7 @@ export function AdminPanel({
       }
     } catch (err) {
       console.error('Error adding player:', err)
-      alert('Error al agregar jugador. Intenta de nuevo.')
+      toast.error('Error al agregar jugador. Intenta de nuevo.')
     }
   }
 
@@ -134,7 +135,7 @@ export function AdminPanel({
       setSquad(prev => prev.filter(p => p.id !== id))
     } catch (err) {
       console.error('Error removing player:', err)
-      alert('Error al remover jugador. Intenta de nuevo.')
+      toast.error('Error al remover jugador. Intenta de nuevo.')
     }
   }
 
@@ -160,7 +161,7 @@ export function AdminPanel({
       }, { onConflict: 'pool_id,match_id' })
     } catch (err) {
       console.error('Error setting result:', err)
-      alert('Error al guardar el resultado. Intenta de nuevo.')
+      toast.error('Error al guardar el resultado. Intenta de nuevo.')
     }
   }
 
@@ -173,7 +174,7 @@ export function AdminPanel({
       setResults(prev => prev.filter(r => r.match_id !== matchId))
     } catch (err) {
       console.error('Error deleting result:', err)
-      alert('Error al borrar el resultado. Intenta de nuevo.')
+      toast.error('Error al borrar el resultado. Intenta de nuevo.')
     }
   }
 
@@ -194,7 +195,7 @@ export function AdminPanel({
       }, { onConflict: 'pool_id,match_id' })
     } catch (err) {
       console.error('Error setting match team:', err)
-      alert('Error al asignar equipo. Intenta de nuevo.')
+      toast.error('Error al asignar equipo. Intenta de nuevo.')
     }
   }
 
