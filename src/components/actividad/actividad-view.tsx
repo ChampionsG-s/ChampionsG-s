@@ -6,7 +6,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
-import { CheckCircle2, Lock, UserPlus, Star, Bell } from 'lucide-react'
+import { CheckCircle2, Lock, UserPlus, Star, Bell, Repeat, Coins } from 'lucide-react'
 import type { Notification } from '@/types'
 
 type Tab = 'personal' | 'global'
@@ -21,6 +21,10 @@ const ICONS: Record<string, typeof Bell> = {
   jornada_closed: Lock,
   member_joined: UserPlus,
   points_earned: Star,
+  equipo_auction_win: Repeat,
+  equipo_poach: Repeat,
+  equipo_sell: Coins,
+  equipo_jornada_reward: Coins,
 }
 
 function iconFor(type: string) {
