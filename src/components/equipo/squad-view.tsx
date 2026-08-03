@@ -194,7 +194,14 @@ export function SquadView({ poolId, roster, playersById, wallet }: SquadViewProp
         </div>
       </div>
 
-      <MySquadPlayerModal entry={selectedEntry} onClose={() => setSelectedEntry(null)} />
+      <MySquadPlayerModal
+        entry={selectedEntry}
+        onClose={() => setSelectedEntry(null)}
+        isLastInPosition={
+          !!selectedEntry &&
+          ownedEntries.filter(e => e.player.position === selectedEntry.player.position).length === 1
+        }
+      />
     </div>
   )
 }

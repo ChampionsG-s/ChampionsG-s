@@ -15,12 +15,13 @@ const POSITION_LABEL: Record<number, string> = { 1: 'POR', 2: 'DEF', 3: 'MED', 4
 interface MySquadPlayerModalProps {
   entry: EquipoEntry | null
   onClose: () => void
+  isLastInPosition?: boolean
 }
 
 // Ficha de un jugador de TU PROPIA plantilla (se abre al pulsar su carta),
 // con la opcion de venderlo por venta rapida (65% de lo que pagaste, la
 // misma penalizacion que si nadie te lo hubiera comprado directamente).
-export function MySquadPlayerModal({ entry, onClose }: MySquadPlayerModalProps) {
+export function MySquadPlayerModal({ entry, onClose, isLastInPosition }: MySquadPlayerModalProps) {
   const supabase = createClient()
   const router = useRouter()
   const [confirming, setConfirming] = useState(false)
@@ -96,8 +97,12 @@ export function MySquadPlayerModal({ entry, onClose }: MySquadPlayerModalProps) 
 
       {confirming && (
         <ConfirmModal
-          title="¿Seguro?"
-          message={`Vas a vender a ${player.name} por ${sellPrice.toLocaleString('es-ES')} monedas (65% de lo que pagaste, por venta rápida).`}
+          title={isLastInPosition ? '¡Cuidado!' : '¿Seguro?'}
+          message={
+            isLastInPosition
+              ? `${player.name} es tu único jugador de ${POSITION_LABEL[player.position] ?? 'esa posición'}. Si lo vendes por ${sellPrice.toLocaleString('es-ES')} monedas te quedarás sin nadie ahí — ya no se asigna un reemplazo gratis automático.`
+              : `Vas a vender a ${player.name} por ${sellPrice.toLocaleString('es-ES')} monedas (65% de lo que pagaste, por venta rápida).`
+          }
           confirmLabel={`Vender · ${sellPrice.toLocaleString('es-ES')}`}
           loading={selling}
           onConfirm={handleSellConfirmed}

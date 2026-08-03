@@ -13,11 +13,11 @@ interface MarketViewProps {
   cycle: EquipoMarketCycle | null
 }
 
-const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000
+const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000
 
 export function MarketView({ currentUserId, listings, bids, playersById, wallet, squadFull, cycle }: MarketViewProps) {
   const balance = wallet?.balance ?? 0
-  const cycleEndsAt = cycle ? new Date(cycle.started_at).getTime() + THREE_DAYS_MS : null
+  const cycleEndsAt = cycle ? new Date(cycle.started_at).getTime() + TWENTY_FOUR_HOURS_MS : null
 
   if (listings.length === 0) {
     return (
