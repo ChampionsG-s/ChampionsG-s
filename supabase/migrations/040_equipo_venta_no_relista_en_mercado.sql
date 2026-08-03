@@ -1,5 +1,5 @@
 -- La equipo_sell_player que estaba viva en produccion no coincidia con
--- ninguna de nuestras migraciones (010/021/025): ademas de calcular el
+-- ninguna de nuestras migraciones (010/021/035): ademas de calcular el
 -- precio de venta con un suelo de 700 y redondeo a la decena (en vez de
 -- round(coin_price * 0.65) sin suelo, que es lo que muestra el cliente),
 -- justo despues de vender insertaba/reactivaba un listado del jugador en
@@ -7,7 +7,7 @@
 -- mercado en curso en vez de quedar simplemente disponible para que le
 -- toque en un futuro sorteo (que es lo que ya hace equipo_sync_market al
 -- elegir jugadores sin dueno). Se quita ese bloque por completo y se deja
--- el precio de venta como en la migracion 025.
+-- el precio de venta como en la migracion 035.
 
 create or replace function public.equipo_sell_player(target_roster_id uuid)
 returns public.equipo_roster
