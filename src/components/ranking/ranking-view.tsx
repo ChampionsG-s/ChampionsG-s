@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { RankingTable } from './ranking-table'
 import { RankingJornadaView } from './ranking-jornada-view'
-import type { PoolMember, Prediction, Result, Match } from '@/types'
+import type { PoolMember, Prediction, Result, Match, GiftSpin, Duel, QuizResponse, TeamRouletteSpin } from '@/types'
 
 type Tab = 'total' | 'jornada'
 
@@ -14,18 +14,22 @@ interface RankingViewProps {
   predictions: Prediction[]
   results: Result[]
   matches: Match[]
+  giftSpins: GiftSpin[]
+  duels: Duel[]
+  quizResponses: QuizResponse[]
+  teamRouletteSpins: TeamRouletteSpin[]
   currentUserId: string
 }
 
-export function RankingView({ poolId, members, predictions, results, matches, currentUserId }: RankingViewProps) {
+export function RankingView({ poolId, members, predictions, results, matches, giftSpins, duels, quizResponses, teamRouletteSpins, currentUserId }: RankingViewProps) {
   const [tab, setTab] = useState<Tab>('total')
 
   return (
     <div className="space-y-4">
       <div className="flex gap-1.5">
         {([
-          ['total', '🏆 Total'],
-          ['jornada', '📅 Por jornada'],
+          ['total', 'Total'],
+          ['jornada', 'Por jornada'],
         ] as [Tab, string][]).map(([key, label]) => (
           <button
             key={key}
@@ -47,6 +51,10 @@ export function RankingView({ poolId, members, predictions, results, matches, cu
           predictions={predictions}
           results={results}
           matches={matches}
+          giftSpins={giftSpins}
+          duels={duels}
+          quizResponses={quizResponses}
+          teamRouletteSpins={teamRouletteSpins}
           currentUserId={currentUserId}
         />
       ) : (

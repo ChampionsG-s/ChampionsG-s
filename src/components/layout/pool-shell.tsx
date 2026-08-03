@@ -7,7 +7,8 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/avatar'
-import { Trophy, CalendarDays, ListOrdered, Settings, LogOut, Bell, Shirt } from 'lucide-react'
+import { Trophy, CalendarDays, ListOrdered, Settings, LogOut, Bell, Shirt, HelpCircle } from 'lucide-react'
+import { HelpModal } from './help-modal'
 import type { Notification, Pool, PoolMember } from '@/types'
 
 interface PoolShellProps {
@@ -32,6 +33,7 @@ export function PoolShell({ pool, membership, username, avatarUrl, unreadPersona
   const pathname = usePathname()
   const router = useRouter()
   const [unreadCount, setUnreadCount] = useState(unreadPersonalCount)
+  const [helpOpen, setHelpOpen] = useState(false)
 
   const isAdmin = membership.role === 'admin'
 
@@ -116,6 +118,13 @@ export function PoolShell({ pool, membership, username, avatarUrl, unreadPersona
               </Link>
             )}
             <button
+              onClick={() => setHelpOpen(true)}
+              title="Ayuda"
+              className="p-2.5 rounded-lg text-muted hover:text-cream hover:bg-surface transition-colors"
+            >
+              <HelpCircle size={18} />
+            </button>
+            <button
               onClick={handleLogout}
               className="p-2.5 rounded-lg text-muted hover:text-cream hover:bg-surface transition-colors"
             >
@@ -161,6 +170,8 @@ export function PoolShell({ pool, membership, username, avatarUrl, unreadPersona
           })}
         </div>
       </nav>
+
+      {helpOpen && <HelpModal isAdmin={isAdmin} onClose={() => setHelpOpen(false)} />}
     </div>
   )
 }

@@ -6,9 +6,20 @@ import { createClient } from '@/lib/supabase/client'
 import { scoreMatch, signFromScores, SIGN_TO_CANONICAL_SCORE, type MatchSign } from '@/lib/scoring'
 import { jornadaLabelForMatch, isJornadaOpen as computeIsJornadaOpen, type OpenPhase } from '@/lib/jornada'
 import { JORNADAS } from '@/lib/data/matches'
+import { isLastJornadaOfGiftBlock, giftBlockForJornadaNumber } from '@/lib/gift'
+import { isFirstJornadaOfQuizBlock, quizBlockForJornadaNumber } from '@/lib/quiz'
+import { teamRouletteSpinWon } from '@/lib/team-roulette'
+import { GiftRouletteModal } from '@/components/gift/gift-roulette-modal'
+import { QuizModal } from '@/components/quiz/quiz-modal'
+import { TeamRouletteModal, type TeamRouletteEntry } from '@/components/team-roulette/team-roulette-modal'
+import { PendingDuelsPanel } from '@/components/duels/pending-duels-panel'
+import { ChallengeModal } from '@/components/duels/challenge-modal'
+import { DuelRevealModal } from '@/components/duels/duel-reveal-modal'
+import { rankValue } from '@/lib/duels'
+import type { MemberTotal } from '@/lib/ranking-totals'
 import { Flag } from '@/components/ui/flag'
 import { cn } from '@/lib/utils'
-import type { Match, Result, Prediction, PoolMember, PoolMatchTeams } from '@/types'
+import type { Match, Result, Prediction, PoolMember, PoolMatchTeams, GiftSpin, Duel, DuelSuit, AppUser, QuizQuestion, QuizResponse, TeamRouletteSpin } from '@/types'
 
 interface MatchesListProps {
   poolId: string
@@ -18,6 +29,16 @@ interface MatchesListProps {
   openPhases: OpenPhase[]
   membership: PoolMember
   matchTeams: PoolMatchTeams[]
+  giftSpins: GiftSpin[]
+  incomingDuels: Duel[]
+  outgoingDuels: Duel[]
+  readyToDrawDuels: Duel[]
+  resolvedDuelNotifications: { notificationId: string; duel: Duel }[]
+  users: AppUser[]
+  memberTotals: MemberTotal[]
+  quizQuestions: QuizQuestion[]
+  quizResponses: QuizResponse[]
+  teamRouletteSpins: TeamRouletteSpin[]
 }
 
 export function MatchesList({
@@ -28,11 +49,30 @@ export function MatchesList({
   openPhases: initialOpenPhases,
   membership,
   matchTeams: initialMatchTeams,
+  giftSpins: initialGiftSpins,
+  incomingDuels,
+  outgoingDuels,
+  readyToDrawDuels,
+  resolvedDuelNotifications,
+  users,
+  memberTotals,
+  quizQuestions,
+  quizResponses: initialQuizResponses,
+  teamRouletteSpins: initialTeamRouletteSpins,
 }: MatchesListProps) {
   const [results, setResults] = useState<Result[]>(initialResults)
   const [predictions, setPredictions] = useState<Prediction[]>(initialPredictions)
   const [openPhases, setOpenPhases] = useState<OpenPhase[]>(initialOpenPhases)
   const [matchTeams, setMatchTeams] = useState<PoolMatchTeams[]>(initialMatchTeams)
+  const [giftSpins, setGiftSpins] = useState<GiftSpin[]>(initialGiftSpins)
+  const [quizResponses, setQuizResponses] = useState<QuizResponse[]>(initialQuizResponses)
+  const [teamRouletteSpins, setTeamRouletteSpins] = useState<TeamRouletteSpin[]>(initialTeamRouletteSpins)
+  const [openGift, setOpenGift] = useState<{ block: number; unlocked: boolean } | null>(null)
+  const [openQuiz, setOpenQuiz] = useState<{ block: number; unlocked: boolean } | null>(null)
+  const [openTeamRoulette, setOpenTeamRoulette] = useState<{ jornadaNumber: number; jornadaLabel: string; unlocked: boolean } | null>(null)
+  const [challengeOpen, setChallengeOpen] = useState<{ unlocked: boolean } | null>(null)
+  const [testDuel, setTestDuel] = useState<Duel | null>(null)
+  const usersMap = new Map(users.map(u => [u.id, { username: u.username, avatar_url: u.avatar_url }]))
   const [jornada, setJornada] = useState<string>(() => {
     const firstOpen = JORNADAS.find(label => computeIsJornadaOpen(matches, label, initialOpenPhases))
     if (firstOpen) return firstOpen
@@ -50,6 +90,37 @@ export function MatchesList({
   const supabase = createClient()
 
   const isAdmin = membership.role === 'admin'
+
+  // Genera un duelo falso (nunca se guarda en la base) solo para que el
+  // admin pueda probar la animacion de cartas sin tener que retar de
+  // verdad a nadie.
+  const buildTestDuel = (): Duel => {
+    const suits: DuelSuit[] = ['oros', 'copas', 'espadas', 'bastos']
+    const randomCard = () => ({
+      rank: Math.floor(Math.random() * 10) + 1,
+      suit: suits[Math.floor(Math.random() * suits.length)],
+    })
+    const c1 = randomCard(), c2 = randomCard(), c3 = randomCard(), c4 = randomCard()
+    const myTotal = rankValue(c1.rank) + rankValue(c2.rank)
+    const rivalTotal = rankValue(c3.rank) + rankValue(c4.rank)
+    const fakeOpponentId = 'test-opponent'
+    const winner = myTotal > rivalTotal ? membership.user_id : rivalTotal > myTotal ? fakeOpponentId : null
+    const now = new Date().toISOString()
+    return {
+      id: 'test-duel',
+      pool_id: poolId,
+      challenger_id: membership.user_id,
+      opponent_id: fakeOpponentId,
+      status: 'resolved',
+      challenger_card1_rank: c1.rank, challenger_card1_suit: c1.suit,
+      challenger_card2_rank: c2.rank, challenger_card2_suit: c2.suit,
+      opponent_card1_rank: c3.rank, opponent_card1_suit: c3.suit,
+      opponent_card2_rank: c4.rank, opponent_card2_suit: c4.suit,
+      winner_id: winner,
+      created_at: now,
+      resolved_at: now,
+    }
+  }
 
   useEffect(() => {
     const channel = supabase
@@ -89,6 +160,19 @@ export function MatchesList({
   const getResult = (matchId: string) => results.find(r => r.match_id === matchId)
   const getRealTeams = (matchId: string) => matchTeams.find(mt => mt.match_id === matchId)
 
+  const buildTeamRouletteEntries = (label: string): TeamRouletteEntry[] => {
+    const jornadaMatches = matches.filter(m => jornadaForMatch(m) === label)
+    return jornadaMatches.flatMap(m => {
+      const realTeams = getRealTeams(m.id)
+      const home = realTeams?.real_home || m.home_team || m.home || '?'
+      const away = realTeams?.real_away || m.away_team || m.away || '?'
+      return [
+        { matchId: m.id, side: 'home' as const, name: home },
+        { matchId: m.id, side: 'away' as const, name: away },
+      ]
+    })
+  }
+
   const handlePrediction = useCallback((matchId: string, side: 'home_score' | 'away_score', value: string) => {
     const match = matches.find(m => m.id === matchId)
     if (!match || !isJornadaOpen(jornadaForMatch(match))) return
@@ -125,7 +209,18 @@ export function MatchesList({
   const currentOpen = isJornadaOpen(currentJornada)
   const bettableMatches = visibleMatches.filter(m => !getResult(m.id))
   const allBetsFilled = bettableMatches.length > 0 && bettableMatches.every(m => getPred(m.id))
-  const isJornadaCommitted = bettableMatches.length > 0 && bettableMatches.every(m => committedMatchIds.has(m.id))
+  // Una jornada se ve como "resumen" (tabla compacta) si el usuario ya tiene
+  // pronostico ahi y no queda nada pendiente de guardar: o bien ya se
+  // guardo (committedMatchIds), o bien el partido ya tiene resultado (no
+  // tiene sentido seguir mostrando el formulario de apuesta editable).
+  const isJornadaCommitted = visibleMatches.length > 0
+    && visibleMatches.some(m => getPred(m.id))
+    && visibleMatches.every(m => committedMatchIds.has(m.id) || !!getResult(m.id))
+  const jornadaTotalPoints = visibleMatches.reduce((sum, m) => {
+    const pred = getPred(m.id)
+    const result = getResult(m.id)
+    return pred && result ? sum + scoreMatch(pred, result, m) : sum
+  }, 0)
 
   const handleSaveBets = useCallback(async () => {
     const toSave = bettableMatches
@@ -196,34 +291,124 @@ export function MatchesList({
         </span>
       </div>
 
+      <PendingDuelsPanel
+        incomingDuels={incomingDuels}
+        outgoingDuels={outgoingDuels}
+        readyToDrawDuels={readyToDrawDuels}
+        resolvedNotifications={resolvedDuelNotifications}
+        currentUserId={membership.user_id}
+        usersMap={usersMap}
+      />
+
       <div className="flex gap-1.5 overflow-x-auto -mx-4 px-4 py-0.5 snap-x scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {jornadas.map((label) => {
+        {jornadas.map((label, i) => {
           const open = isJornadaOpen(label)
           const active = currentJornada === label
+          const jornadaNumber = i + 1
+          const giftBlock = isLastJornadaOfGiftBlock(jornadaNumber) ? giftBlockForJornadaNumber(jornadaNumber) : null
+          const spun = giftBlock !== null ? giftSpins.find(g => g.block_number === giftBlock) : undefined
+          const isDuelSlot = jornadaNumber % 3 === 2
           return (
-            <button
-              key={label}
-              ref={active ? activeTabRef : undefined}
-              onClick={() => setJornada(label)}
-              title={label}
-              className={cn(
-                'snap-start flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-full text-xs font-bold transition-all',
-                active
-                  ? 'bg-gradient-to-b from-gold-2 to-gold text-background shadow-md shadow-gold/20'
-                  : open
-                    ? 'border border-border text-muted hover:border-gold hover:text-gold'
-                    : 'border border-orange-950 bg-orange-950/70 text-orange-800 cursor-not-allowed'
+            <div key={label} className="flex gap-1.5 flex-shrink-0">
+              <button
+                ref={active ? activeTabRef : undefined}
+                onClick={() => setJornada(label)}
+                title={label}
+                className={cn(
+                  'snap-start flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-full text-xs font-bold transition-all',
+                  active
+                    ? 'bg-gradient-to-b from-gold-2 to-gold text-background shadow-md shadow-gold/20'
+                    : open
+                      ? 'border border-border text-muted hover:border-gold hover:text-gold'
+                      : 'border border-orange-950 bg-orange-950/70 text-orange-800 cursor-not-allowed'
+                )}
+              >
+                {label} {!open && '🔒'}
+              </button>
+              {isFirstJornadaOfQuizBlock(jornadaNumber) && (() => {
+                const quizBlock = quizBlockForJornadaNumber(jornadaNumber)
+                const answered = quizResponses.find(r => r.block_number === quizBlock)
+                return (
+                  <button
+                    onClick={() => setOpenQuiz({ block: quizBlock, unlocked: open })}
+                    title={open ? 'Quiz' : 'Quiz (aún bloqueado)'}
+                    className={cn(
+                      'snap-start flex-shrink-0 whitespace-nowrap px-3 py-2 rounded-full text-xs font-bold transition-all border',
+                      !open
+                        ? 'border-border/40 text-muted/50'
+                        : answered
+                          ? 'border-border text-muted hover:border-gold hover:text-gold'
+                          : 'border-gold/60 bg-gold/10 text-gold shadow-[0_0_10px_rgba(212,160,23,0.25)] animate-pulse'
+                    )}
+                  >
+                    🧠
+                  </button>
+                )
+              })()}
+              {giftBlock !== null && (
+                <button
+                  onClick={() => setOpenGift({ block: giftBlock, unlocked: open })}
+                  title={open ? 'Ruleta regalo' : 'Ruleta regalo (aún bloqueada)'}
+                  className={cn(
+                    'snap-start flex-shrink-0 whitespace-nowrap px-3 py-2 rounded-full text-xs font-bold transition-all border',
+                    !open
+                      ? 'border-border/40 text-muted/50'
+                      : spun
+                        ? 'border-border text-muted hover:border-gold hover:text-gold'
+                        : 'border-gold/60 bg-gold/10 text-gold shadow-[0_0_10px_rgba(212,160,23,0.25)] animate-pulse'
+                  )}
+                >
+                  🎁
+                </button>
               )}
-            >
-              {label} {!open && '🔒'}
-            </button>
+              {giftBlock !== null && (() => {
+                const spunTeam = teamRouletteSpins.find(s => s.jornada_number === jornadaNumber)
+                return (
+                  <button
+                    onClick={() => setOpenTeamRoulette({ jornadaNumber, jornadaLabel: label, unlocked: open })}
+                    title={open ? 'Ruleta de equipos' : 'Ruleta de equipos (aún bloqueada)'}
+                    className={cn(
+                      'snap-start flex-shrink-0 whitespace-nowrap px-3 py-2 rounded-full text-xs font-bold transition-all border',
+                      !open
+                        ? 'border-border/40 text-muted/50'
+                        : spunTeam
+                          ? 'border-border text-muted hover:border-gold hover:text-gold'
+                          : 'border-gold/60 bg-gold/10 text-gold shadow-[0_0_10px_rgba(212,160,23,0.25)] animate-pulse'
+                    )}
+                  >
+                    🔀
+                  </button>
+                )
+              })()}
+              {isDuelSlot && (
+                <button
+                  onClick={() => setChallengeOpen({ unlocked: open })}
+                  title={open ? 'Retar a un duelo' : 'Retar a un duelo (aún bloqueado)'}
+                  className={cn(
+                    'snap-start flex-shrink-0 whitespace-nowrap px-3 py-2 rounded-full text-xs font-bold transition-all border',
+                    open
+                      ? 'border-border text-muted hover:border-gold hover:text-gold'
+                      : 'border-border/40 text-muted/50'
+                  )}
+                >
+                  ⚔️
+                </button>
+              )}
+            </div>
           )
         })}
       </div>
 
       {isAdmin && (
-        <div className="bg-red-900/15 border border-red-900/50 rounded-xl px-4 py-2.5 text-xs text-red-300 font-bold uppercase tracking-wide">
-          Admin — controla los resultados y la apertura de cada jornada
+        <div className="bg-red-900/15 border border-red-900/50 rounded-xl px-4 py-2.5 text-xs text-red-300 font-bold uppercase tracking-wide flex items-center justify-between gap-2">
+          <span>Admin — controla los resultados y la apertura de cada jornada</span>
+          <button
+            type="button"
+            onClick={() => setTestDuel(buildTestDuel())}
+            className="flex-shrink-0 px-2.5 py-1 rounded-lg border border-red-700/60 text-red-200 normal-case font-bold hover:bg-red-900/30 transition-colors"
+          >
+            🧪 Probar duelo
+          </button>
         </div>
       )}
 
@@ -235,8 +420,13 @@ export function MatchesList({
               match={m}
               realTeams={getRealTeams(m.id)}
               pred={getPred(m.id)}
+              result={getResult(m.id)}
             />
           ))}
+          <div className="flex items-center justify-between px-4 py-3 bg-surface-2/40">
+            <span className="text-xs font-bold text-muted uppercase tracking-wide">Puntuación total</span>
+            <span className="font-display text-lg text-gold">{jornadaTotalPoints}pts</span>
+          </div>
         </div>
       ) : (
         <>
@@ -296,6 +486,94 @@ export function MatchesList({
           )}
         </>
       )}
+
+      {openGift !== null && (
+        <GiftRouletteModal
+          poolId={poolId}
+          block={openGift.block}
+          unlocked={openGift.unlocked}
+          existingDelta={giftSpins.find(g => g.block_number === openGift.block)?.delta ?? null}
+          isAdmin={isAdmin}
+          onClose={() => setOpenGift(null)}
+          onSpun={(delta) => {
+            // Los giros del admin son ilimitados y no se persisten (ver
+            // migracion 020): no los marcamos como "ya girado" localmente
+            // para que pueda seguir probando sin cambiar de usuario.
+            if (isAdmin) return
+            setGiftSpins(prev => [...prev, {
+              id: `local-${openGift.block}`,
+              pool_id: poolId,
+              user_id: membership.user_id,
+              block_number: openGift.block,
+              delta,
+              created_at: new Date().toISOString(),
+            }])
+          }}
+        />
+      )}
+
+      {openQuiz !== null && (
+        <QuizModal
+          key={openQuiz.block}
+          poolId={poolId}
+          currentUserId={membership.user_id}
+          block={openQuiz.block}
+          question={quizQuestions.find(q => q.block_number === openQuiz.block) ?? null}
+          existingResponse={quizResponses.find(r => r.block_number === openQuiz.block) ?? null}
+          unlocked={openQuiz.unlocked}
+          isAdmin={isAdmin}
+          quizPoints={quizResponses.filter(r => r.is_correct).length}
+          onClose={() => setOpenQuiz(null)}
+          onAnswered={(response) => {
+            setQuizResponses(prev => [...prev.filter(r => r.block_number !== response.block_number), response])
+          }}
+        />
+      )}
+
+      {openTeamRoulette !== null && (() => {
+        const spin = teamRouletteSpins.find(s => s.jornada_number === openTeamRoulette.jornadaNumber) ?? null
+        const winStatus = spin === null ? null : results.some(r => r.match_id === spin.match_id)
+          ? (teamRouletteSpinWon(spin, results) ? 'won' : 'lost')
+          : 'pending'
+        return (
+          <TeamRouletteModal
+            key={openTeamRoulette.jornadaNumber}
+            poolId={poolId}
+            currentUserId={membership.user_id}
+            jornadaNumber={openTeamRoulette.jornadaNumber}
+            jornadaLabel={openTeamRoulette.jornadaLabel}
+            entries={buildTeamRouletteEntries(openTeamRoulette.jornadaLabel)}
+            existingSpin={spin}
+            winStatus={winStatus}
+            unlocked={openTeamRoulette.unlocked}
+            isAdmin={isAdmin}
+            onClose={() => setOpenTeamRoulette(null)}
+            onSpun={(newSpin) => {
+              if (isAdmin) return
+              setTeamRouletteSpins(prev => [...prev.filter(s => s.jornada_number !== newSpin.jornada_number), newSpin])
+            }}
+          />
+        )
+      })()}
+
+      {challengeOpen !== null && (
+        <ChallengeModal
+          poolId={poolId}
+          currentUserId={membership.user_id}
+          memberTotals={memberTotals}
+          unlocked={challengeOpen.unlocked}
+          onClose={() => setChallengeOpen(null)}
+        />
+      )}
+
+      {testDuel !== null && (
+        <DuelRevealModal
+          duel={testDuel}
+          currentUserId={membership.user_id}
+          usersMap={new Map([...usersMap, ['test-opponent', { username: 'Rival de prueba', avatar_url: null }]])}
+          onClose={() => setTestDuel(null)}
+        />
+      )}
     </div>
   )
 }
@@ -306,9 +584,10 @@ interface BetSummaryRowProps {
   match: Match
   realTeams?: PoolMatchTeams
   pred?: Prediction
+  result?: Result
 }
 
-function BetSummaryRow({ match, realTeams, pred }: BetSummaryRowProps) {
+function BetSummaryRow({ match, realTeams, pred, result }: BetSummaryRowProps) {
   const isBonus = match.is_bonus ?? false
   const displayHome = realTeams?.real_home || match.home_team || match.home || '?'
   const displayAway = realTeams?.real_away || match.away_team || match.away || '?'
@@ -321,6 +600,11 @@ function BetSummaryRow({ match, realTeams, pred }: BetSummaryRowProps) {
   const pickLabel = pred
     ? (isBonus ? `${pred.home_score}-${pred.away_score}` : signFromScores(pred.home_score, pred.away_score))
     : '—'
+
+  const hasResult = !!result
+  const pts = pred && result ? scoreMatch(pred, result, match) : null
+  const ptsExactValue = match.pts_exact ?? 3
+  const isFullHit = pts !== null && (isBonus ? pts === ptsExactValue : pts > 0)
 
   return (
     <div className="flex items-center gap-2 sm:gap-3 px-4 py-2.5">
@@ -344,6 +628,21 @@ function BetSummaryRow({ match, realTeams, pred }: BetSummaryRowProps) {
       >
         {pickLabel}
       </span>
+      {hasResult && (
+        <span className="flex-shrink-0 font-display text-sm text-gold px-1">
+          {result!.home_score}–{result!.away_score}
+        </span>
+      )}
+      {pts !== null && (
+        <span
+          className={cn(
+            'flex-shrink-0 text-xs font-bold px-2 py-0.5 rounded-full',
+            isFullHit ? 'bg-green-900 text-green-300' : pts > 0 ? 'bg-amber-900 text-amber-300' : 'bg-red-900 text-red-300'
+          )}
+        >
+          {pts}pt{pts !== 1 ? 's' : ''}
+        </span>
+      )}
     </div>
   )
 }
