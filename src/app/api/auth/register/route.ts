@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Ese nombre ya está en uso.' }, { status: 409 })
   }
 
-  const { error } = await admin.auth.admin.createUser({
+  const { data: created, error } = await admin.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
@@ -33,6 +33,23 @@ export async function POST(request: Request) {
       ? 'Ese nombre ya está en uso.'
       : error.message
     return NextResponse.json({ error: message }, { status: 400 })
+  }
+
+  // Modo pool unico: todo usuario nuevo pide entrar a ChampionsG's y queda
+  // "pending" hasta que un admin lo acepte desde el panel de Miembros. Se
+  // hace con el cliente admin (bypassa RLS) porque un usuario recien
+  // creado todavia no es miembro y no puede ni leer la fila de pools.
+  const { data: pool } = await admin
+    .from('pools')
+    .select('id')
+    .or("name.eq.ChampionsG's,name.eq.ChampionsG´s")
+    .limit(1)
+    .maybeSingle()
+
+  if (pool && created.user) {
+    await admin
+      .from('pool_members')
+      .insert({ pool_id: pool.id, user_id: created.user.id, role: 'member', status: 'pending' })
   }
 
   return NextResponse.json({ ok: true })

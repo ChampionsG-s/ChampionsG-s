@@ -58,8 +58,8 @@ export function ActividadView({ personal, global: globalNotifs }: ActividadViewP
     <div className="space-y-4">
       <div className="flex gap-1.5">
         {([
-          ['personal', `🔔 Personales${unreadCount > 0 ? ` (${unreadCount})` : ''}`],
-          ['global', '📣 Globales'],
+          ['personal', `Personales${unreadCount > 0 ? ` (${unreadCount})` : ''}`],
+          ['global', 'Globales'],
         ] as [Tab, string][]).map(([key, label]) => (
           <button
             key={key}

@@ -1,11 +1,13 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Flag } from '@/components/ui/flag'
-import { allJornadaLabels, jornadaLabelForMatch, jornadaDeadline, isJornadaOpen as computeIsJornadaOpen } from '@/lib/jornada'
+import { Avatar } from '@/components/ui/avatar'
+import { jornadaLabelForMatch, jornadaDeadline, isJornadaOpen as computeIsJornadaOpen } from '@/lib/jornada'
 import { scoreMatch } from '@/lib/scoring'
 import type { PoolMember, Match, Result } from '@/types'
 
@@ -16,11 +18,11 @@ interface OpenPhase {
   is_open: boolean
 }
 
-type Tab = 'members' | 'jornadas' | 'results'
+type Tab = 'results' | 'members'
 
 interface LeagueAdminPanelProps {
   poolId: string
-  members: (PoolMember & { username: string })[]
+  members: (PoolMember & { username: string; avatar_url?: string | null })[]
   openPhases: OpenPhase[]
   matches: Match[]
   results: Result[]
@@ -40,14 +42,26 @@ export function LeagueAdminPanel({
   currentUserId,
 }: LeagueAdminPanelProps) {
   const supabase = createClient()
-  const [tab, setTab] = useState<Tab>('members')
+  const [tab, setTab] = useState<Tab>('results')
   const [members, setMembers] = useState(initialMembers)
   const [openPhases, setOpenPhases] = useState(initialPhases)
   const [matches, setMatches] = useState(initialMatches)
   const [results, setResults] = useState(initialResults)
   const [loading, setLoading] = useState<string | null>(null)
+  const [openJornada, setOpenJornada] = useState<string | null>(null)
+  const [completedOpen, setCompletedOpen] = useState(false)
 
-  const jornadas = useMemo(() => allJornadaLabels(matches), [matches])
+  // 38 jornadas fijas (1ª vuelta 1-19, 2ª vuelta 20-38), independiente de
+  // cuantos partidos haya cargados todavia para cada una.
+  const allJornadaSlots = useMemo(() => Array.from({ length: 38 }, (_, i) => `Jornada ${i + 1}`), [])
+  const primeraVueltaLabels = allJornadaSlots.slice(0, 19)
+  const segundaVueltaLabels = allJornadaSlots.slice(19, 38)
+  const [openVuelta, setOpenVuelta] = useState<'primera' | 'segunda' | null>('primera')
+
+  const isJornadaCompleted = (label: string) => {
+    const jornadaMatches = matches.filter(match => jornadaLabel(match, matches) === label)
+    return jornadaMatches.length > 0 && jornadaMatches.every(match => results.some(r => r.match_id === match.id))
+  }
 
   const pending = members.filter(member => member.status === 'pending')
   const approved = members.filter(member => member.status === 'approved')
@@ -194,9 +208,8 @@ export function LeagueAdminPanel({
 
       <div className="flex gap-1.5 flex-wrap">
         {([
-          ['members', `👥 Miembros${pending.length > 0 ? ` (${pending.length})` : ''}`],
-          ['jornadas', '🗓️ Jornadas'],
-          ['results', '⚽ Resultados'],
+          ['results', 'Resultados'],
+          ['members', `Miembros${pending.length > 0 ? ` (${pending.length})` : ''}`],
         ] as [Tab, string][]).map(([key, label]) => (
           <button
             key={key}
@@ -248,17 +261,30 @@ export function LeagueAdminPanel({
           </div>
 
           <div className="card">
-            <h2 className="font-bold text-sm uppercase tracking-wide mb-3">👥 Miembros de la quiniela</h2>
-            <div className="space-y-2">
+            <h2 className="font-bold text-sm uppercase tracking-wide mb-3">👥 Miembros de ChampionsG&apos;s</h2>
+            <div className="flex flex-wrap items-start justify-center gap-x-2 gap-y-6">
               {approved.map(member => {
                 const isMe = member.user_id === currentUserId
                 return (
-                  <div key={member.id} className="flex items-center gap-3 bg-surface-2 rounded-lg px-3 py-2.5">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-sm">{member.username}</span>
-                        {member.role === 'admin' && <span className="badge badge-admin">ADMIN</span>}
-                        {isMe && <span className="text-xs text-muted">(tú)</span>}
+                  <div
+                    key={member.id}
+                    className={cn(
+                      'relative flex flex-col items-center rounded-xl border px-1.5 pt-2.5 pb-2 w-24 aspect-[3/4] flex-shrink-0',
+                      isMe ? 'border-gold/50 bg-gold/[0.06]' : 'bg-surface-2 border-border'
+                    )}
+                  >
+                    {member.role === 'admin' && (
+                      <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 badge badge-admin text-[8px] px-1.5 py-0.5">
+                        ADMIN
+                      </span>
+                    )}
+                    <div className="mt-1 text-xs font-bold text-cream text-center truncate max-w-full leading-tight">
+                      {member.username}
+                      {isMe && <span className="text-muted font-normal"> (tú)</span>}
+                    </div>
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className="rounded-full border border-border/60 bg-surface-2 p-0.5">
+                        <Avatar username={member.username} avatarUrl={member.avatar_url} size="lg" />
                       </div>
                     </div>
                   </div>
@@ -269,104 +295,158 @@ export function LeagueAdminPanel({
         </div>
       )}
 
-      {tab === 'jornadas' && (
-        <div className="card border-red-900">
-          <h2 className="font-bold text-sm text-red-300 uppercase tracking-wide mb-3">🗓️ Control de jornadas</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {jornadas.map(label => {
-              const open = isJornadaOpen(label)
-              const deadline = jornadaDeadline(matches, label)
-              return (
+      {tab === 'results' && (() => {
+        const renderJornadaBlock = (label: string) => {
+          const jornadaMatches = matches.filter(match => jornadaLabel(match, matches) === label)
+          const hasMatches = jornadaMatches.length > 0
+          const isOpen = openJornada === label
+          const filledCount = jornadaMatches.filter(match => results.some(r => r.match_id === match.id)).length
+
+          return (
+            <div key={label} className="border border-border rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => hasMatches && setOpenJornada(isOpen ? null : label)}
+                disabled={!hasMatches}
+                className={cn(
+                  'w-full flex items-center justify-between gap-2 px-3 py-2.5 bg-surface-2 transition-colors',
+                  hasMatches ? 'hover:bg-surface' : 'opacity-50 cursor-not-allowed'
+                )}
+              >
+                <span className="font-black text-sm tracking-wide text-gold">{label}</span>
+                <span className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted font-normal">
+                    {hasMatches ? `${filledCount}/${jornadaMatches.length} cargados` : 'Sin partidos todavía'}
+                  </span>
+                  {hasMatches && <ChevronDown size={16} className={cn('text-muted transition-transform', isOpen && 'rotate-180')} />}
+                </span>
+              </button>
+              {hasMatches && isOpen && (() => {
+                const jornadaIsOpen = isJornadaOpen(label)
+                const deadline = jornadaDeadline(matches, label)
+                return (
+              <div className="space-y-2 p-3">
                 <button
-                  key={label}
-                  onClick={() => handleToggleJornada(label, open)}
+                  type="button"
+                  onClick={() => handleToggleJornada(label, jornadaIsOpen)}
                   disabled={loading === `jornada-${label}`}
                   className={cn(
-                    'text-left px-3 py-2.5 rounded-lg text-xs font-bold transition-colors disabled:opacity-50',
-                    open ? 'bg-green-900 text-green-300' : 'bg-surface-2 text-muted hover:bg-surface'
+                    'w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-colors disabled:opacity-50',
+                    jornadaIsOpen ? 'bg-green-900 text-green-300' : 'bg-surface-2 text-muted hover:bg-surface'
                   )}
                 >
-                  <div>{open ? '✅ ABIERTA' : '🔒 CERRADA'}</div>
-                  <div className="font-normal opacity-75 mt-0.5">{label}</div>
+                  <div>{jornadaIsOpen ? '✅ ABIERTA' : '🔒 CERRADA'}</div>
                   <div className="font-normal opacity-75 mt-0.5">
                     Cierra: {Number.isFinite(deadline) ? new Date(deadline).toLocaleString('es') : 'sin fecha'}
                   </div>
                 </button>
-              )
-            })}
-          </div>
-          <p className="text-xs text-muted mt-3">
-            💡 Las apuestas se cierran al llegar la fecha del primer partido de cada jornada. Este control te permite abrir o cerrar manualmente si hace falta.
-          </p>
-        </div>
-      )}
-
-      {tab === 'results' && (
-        <div className="card">
-          <h2 className="font-bold text-sm uppercase tracking-wide mb-1">⚽ Resultados de jornada</h2>
-          <p className="text-xs text-muted mb-4">
-            Introduce el marcador final de cada partido. Estos resultados alimentan el ranking.
-          </p>
-          <div className="space-y-5">
-            {jornadas.map(label => {
-              const jornadaMatches = matches.filter(match => jornadaLabel(match, matches) === label)
-              if (jornadaMatches.length === 0) return null
-
-              return (
-                <div key={label}>
-                  <div className="font-black text-sm tracking-wide text-gold mb-2">{label}</div>
-                  <div className="space-y-2">
-                    {jornadaMatches.map(match => {
-                      const result = results.find(item => item.match_id === match.id)
-                      const isBonus = match.is_bonus ?? false
-                      return (
-                        <div key={match.id} className={cn('bg-surface-2 border rounded-xl p-3 shadow-sm shadow-black/10', isBonus ? 'border-gold' : 'border-border')}>
-                          <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-1.5">
-                            <div className="flex flex-col items-center gap-1 text-center text-xs font-semibold">
-                              <Flag team={match.home_team || match.home || ''} size="sm" />
-                              <span className="leading-tight line-clamp-2">{match.home_team || match.home || '-'}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 pt-1">
-                              <ResultInput
-                                value={result?.home_score}
-                                onSave={(value) => handleSetResult(match.id, 'home_score', value)}
-                              />
-                              <span className="text-muted font-bold">:</span>
-                              <ResultInput
-                                value={result?.away_score}
-                                onSave={(value) => handleSetResult(match.id, 'away_score', value)}
-                              />
-                            </div>
-                            <div className="flex flex-col items-center gap-1 text-center text-xs font-semibold">
-                              <Flag team={match.away_team || match.away || ''} size="sm" />
-                              <span className="leading-tight line-clamp-2">{match.away_team || match.away || '-'}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between mt-2">
-                            <p className="text-[10px] text-muted">
-                              {match.date}
-                            </p>
-                            <button
-                              onClick={() => handleToggleBonus(match.id)}
-                              disabled={loading === `bonus-${match.id}`}
-                              className={cn(
-                                'text-[10px] font-bold px-2 py-1 rounded-full transition-colors disabled:opacity-50',
-                                isBonus ? 'bg-gold text-background' : 'bg-surface text-muted hover:text-gold'
-                              )}
-                            >
-                              {isBonus ? '⭐ Partido bonus' : 'Marcar como bonus'}
-                            </button>
-                          </div>
+                {jornadaMatches.map(match => {
+                  const result = results.find(item => item.match_id === match.id)
+                  const isBonus = match.is_bonus ?? false
+                  return (
+                    <div key={match.id} className={cn('bg-surface-2 border rounded-xl p-3 shadow-sm shadow-black/10', isBonus ? 'border-gold' : 'border-border')}>
+                      <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-1.5">
+                        <div className="flex flex-col items-center gap-1 text-center text-xs font-semibold">
+                          <Flag team={match.home_team || match.home || ''} size="sm" />
+                          <span className="leading-tight line-clamp-2">{match.home_team || match.home || '-'}</span>
                         </div>
-                      )
-                    })}
-                  </div>
+                        <div className="flex items-center gap-1.5 pt-1">
+                          <ResultInput
+                            value={result?.home_score}
+                            onSave={(value) => handleSetResult(match.id, 'home_score', value)}
+                          />
+                          <span className="text-muted font-bold">:</span>
+                          <ResultInput
+                            value={result?.away_score}
+                            onSave={(value) => handleSetResult(match.id, 'away_score', value)}
+                          />
+                        </div>
+                        <div className="flex flex-col items-center gap-1 text-center text-xs font-semibold">
+                          <Flag team={match.away_team || match.away || ''} size="sm" />
+                          <span className="leading-tight line-clamp-2">{match.away_team || match.away || '-'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between mt-2">
+                        <p className="text-[10px] text-muted">
+                          {match.date}
+                        </p>
+                        <button
+                          onClick={() => handleToggleBonus(match.id)}
+                          disabled={loading === `bonus-${match.id}`}
+                          className={cn(
+                            'text-[10px] font-bold px-2 py-1 rounded-full transition-colors disabled:opacity-50',
+                            isBonus ? 'bg-gold text-background' : 'bg-surface text-muted hover:text-gold'
+                          )}
+                        >
+                          {isBonus ? '⭐ Partido bonus' : 'Marcar como bonus'}
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+                )
+              })()}
+            </div>
+          )
+        }
+
+        const renderVuelta = (key: 'primera' | 'segunda', title: string, labels: string[]) => {
+          const completed = labels.filter(isJornadaCompleted)
+          const incomplete = labels.filter(label => !isJornadaCompleted(label))
+          const isOpen = openVuelta === key
+
+          return (
+            <div className="border border-gold/40 rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setOpenVuelta(isOpen ? null : key)}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2.5 bg-gold/10 hover:bg-gold/15 transition-colors"
+              >
+                <span className="font-black text-sm tracking-wide text-gold">{title}</span>
+                <ChevronDown size={16} className={cn('text-gold transition-transform', isOpen && 'rotate-180')} />
+              </button>
+              {isOpen && (
+                <div className="space-y-2 p-3">
+                  {completed.length > 0 && (
+                    <div className="border border-gold/40 rounded-xl overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setCompletedOpen(o => !o)}
+                        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 bg-gold/10 hover:bg-gold/15 transition-colors"
+                      >
+                        <span className="font-black text-sm tracking-wide text-gold">
+                          Jornadas completadas ({completed.length})
+                        </span>
+                        <ChevronDown size={16} className={cn('text-gold transition-transform', completedOpen && 'rotate-180')} />
+                      </button>
+                      {completedOpen && (
+                        <div className="space-y-2 p-3 bg-black/10">
+                          {completed.map(label => renderJornadaBlock(label))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {incomplete.map(label => renderJornadaBlock(label))}
                 </div>
-              )
-            })}
+              )}
+            </div>
+          )
+        }
+
+        return (
+          <div className="card">
+            <h2 className="font-bold text-sm uppercase tracking-wide mb-1">⚽ Resultados de jornada</h2>
+            <p className="text-xs text-muted mb-4">
+              Introduce el marcador final de cada partido. Estos resultados alimentan el ranking.
+            </p>
+            <div className="space-y-2">
+              {renderVuelta('primera', '1ª Vuelta', primeraVueltaLabels)}
+              {renderVuelta('segunda', '2ª Vuelta', segundaVueltaLabels)}
+            </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
     </div>
   )
 }

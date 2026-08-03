@@ -158,6 +158,30 @@ export interface Notification {
   read_at: string | null
 }
 
+// ─── Duelos (1vs1 con baraja española) ─────────────────────────────────────────
+
+export type DuelStatus = 'pending' | 'declined' | 'resolved'
+export type DuelSuit = 'oros' | 'copas' | 'espadas' | 'bastos'
+
+export interface Duel {
+  id: string
+  pool_id: string
+  challenger_id: string
+  opponent_id: string
+  status: DuelStatus
+  challenger_card1_rank: number | null
+  challenger_card1_suit: DuelSuit | null
+  challenger_card2_rank: number | null
+  challenger_card2_suit: DuelSuit | null
+  opponent_card1_rank: number | null
+  opponent_card1_suit: DuelSuit | null
+  opponent_card2_rank: number | null
+  opponent_card2_suit: DuelSuit | null
+  winner_id: string | null
+  created_at: string
+  resolved_at: string | null
+}
+
 // ─── Equipo (mini-juego de fichajes fantasy) ───────────────────────────────────
 
 export interface EquipoPlayer {
@@ -259,6 +283,58 @@ export interface EquipoRoster {
   status: 'owned' | 'sold'
   sold_at: string | null
   sold_price: number | null
+}
+
+// ─── Gift roulette (regalo cada 3 jornadas) ────────────────────────────────────
+
+export interface GiftSpin {
+  id: string
+  pool_id: string
+  user_id: string
+  block_number: number
+  delta: number
+  created_at: string
+}
+
+// ─── Quiz (pregunta de futbol cada 3 jornadas) ─────────────────────────────────
+
+export type QuizOptionLetter = 'A' | 'B' | 'C' | 'D'
+
+export interface QuizQuestion {
+  block_number: number
+  question: string
+  option_a: string
+  option_b: string
+  option_c: string
+  option_d: string
+  correct_option: QuizOptionLetter
+  explanation: string
+  created_at: string
+}
+
+export interface QuizResponse {
+  id: string
+  pool_id: string
+  user_id: string
+  block_number: number
+  selected_option: QuizOptionLetter
+  is_correct: boolean
+  created_at: string
+}
+
+// ─── Ruleta de equipos (cada 3 jornadas, misma jornada que el regalo) ──────────
+
+export type TeamSide = 'home' | 'away'
+
+export interface TeamRouletteSpin {
+  id: string
+  pool_id: string
+  user_id: string
+  jornada_number: number
+  match_id: string
+  team_side: TeamSide
+  team_name: string
+  created_at: string
 }
 
 // ─── App types ────────────────────────────────────────────────────────────────
